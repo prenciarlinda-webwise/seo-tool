@@ -6,6 +6,7 @@ import {
   ChevronRight,
   Crosshair,
   Globe,
+  RefreshCw,
   Search,
   Sparkles,
   TrendingUp,
@@ -14,9 +15,11 @@ import {
   fetchDiscoveryRuns,
   fetchDiscoveryResults,
   promoteKeywords,
+  runDiscovery,
   type DiscoveryRun,
   type DiscoveryResult,
 } from "@/lib/api";
+import { ActionButton } from "@/components/action-button";
 import { cn, formatNumber } from "@/lib/utils";
 
 type SourceFilter = "all" | "ranked" | "competitor_gap";
@@ -131,9 +134,23 @@ export default function DiscoveryPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-semibold text-gray-900 mb-2">
-        Keyword Discovery
-      </h1>
+      <div className="flex items-center justify-between mb-2">
+        <h1 className="text-2xl font-semibold text-gray-900">
+          Keyword Discovery
+        </h1>
+        <ActionButton
+          label="Run Discovery"
+          loadingLabel="Discovering..."
+          icon={<RefreshCw className="h-3.5 w-3.5" />}
+          onClick={() => runDiscovery(clientId)}
+          onSuccess={() => {
+            fetchDiscoveryRuns(clientId).then((res) => {
+              setRuns(res.results);
+              if (res.results.length > 0) setSelectedRun(res.results[0]);
+            });
+          }}
+        />
+      </div>
       <p className="text-sm text-gray-500 mb-5">
         Find new keyword opportunities from your existing rankings and competitor gaps
       </p>

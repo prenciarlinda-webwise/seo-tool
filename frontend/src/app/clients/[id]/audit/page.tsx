@@ -6,10 +6,13 @@ import {
   fetchSiteAudits,
   fetchAuditPages,
   fetchLighthouseResults,
+  runAudit,
+  runLighthouse,
   type SiteAuditData,
   type AuditPageData,
   type LighthouseData,
 } from "@/lib/api";
+import { ActionButton } from "@/components/action-button";
 import { cn, formatNumber } from "@/lib/utils";
 import {
   Shield,
@@ -28,6 +31,7 @@ import {
   Eye,
   Loader2,
   ClipboardList,
+  RefreshCw,
 } from "lucide-react";
 
 /* ------------------------------------------------------------------ */
@@ -345,7 +349,35 @@ export default function AuditPage() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Site Audit</h1>
+        <div className="flex items-center justify-between mb-2">
+          <h1 className="text-2xl font-bold text-gray-900">Site Audit</h1>
+          <div className="flex items-center gap-2">
+            <ActionButton
+              label="Run Audit"
+              loadingLabel="Auditing..."
+              icon={<RefreshCw className="h-3.5 w-3.5" />}
+              onClick={() => runAudit(clientId)}
+              onSuccess={() => {
+                fetchSiteAudits(clientId).then((res) => {
+                  const latest = res.results[0] ?? null;
+                  setAudit(latest);
+                  if (latest) {
+                    fetchAuditPages(clientId, latest.id).then((pagesRes) => setPages(pagesRes.results));
+                  }
+                });
+              }}
+            />
+            <ActionButton
+              label="Run Lighthouse"
+              loadingLabel="Running..."
+              icon={<RefreshCw className="h-3.5 w-3.5" />}
+              onClick={() => runLighthouse(clientId)}
+              onSuccess={() => {
+                fetchLighthouseResults(clientId).then((res) => setLighthouse(res.results));
+              }}
+            />
+          </div>
+        </div>
         <p className="text-sm text-gray-500 mt-1">
           {audit.target_url} &middot;{" "}
           {new Date(audit.created_at).toLocaleDateString()} &middot;{" "}

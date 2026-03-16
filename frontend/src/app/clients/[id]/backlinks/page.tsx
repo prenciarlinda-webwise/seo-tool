@@ -7,11 +7,13 @@ import {
   fetchBacklinks,
   fetchReferringDomains,
   fetchAnchors,
+  runBacklinks,
   type BacklinkSummaryData,
   type BacklinkData,
   type ReferringDomainData,
   type AnchorData,
 } from "@/lib/api";
+import { ActionButton } from "@/components/action-button";
 import { cn, formatNumber } from "@/lib/utils";
 import {
   Link2,
@@ -25,6 +27,7 @@ import {
   ExternalLink,
   Activity,
   Anchor,
+  RefreshCw,
 } from "lucide-react";
 
 /* ------------------------------------------------------------------ */
@@ -237,7 +240,18 @@ export default function BacklinksPage() {
   return (
     <div className="space-y-8">
       {/* Header */}
-      <h1 className="text-2xl font-semibold text-gray-900">Backlinks</h1>
+      <div className="flex items-center justify-between mb-2">
+        <h1 className="text-2xl font-semibold text-gray-900">Backlinks</h1>
+        <ActionButton
+          label="Pull Backlinks"
+          loadingLabel="Pulling..."
+          icon={<RefreshCw className="h-3.5 w-3.5" />}
+          onClick={() => runBacklinks(clientId)}
+          onSuccess={() => {
+            Promise.all([loadSummary(), loadBacklinks(), loadDomains(), loadAnchors()]);
+          }}
+        />
+      </div>
 
       {/* ---- Summary Cards ---- */}
       {summary && (

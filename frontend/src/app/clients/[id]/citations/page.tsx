@@ -9,10 +9,12 @@ import {
   createCitation,
   updateCitation,
   deleteCitation,
+  triggerCitationCheck,
   type CitationSummaryResponse,
   type CitationData,
   type CitationDirectoryData,
 } from "@/lib/api";
+import { ActionButton } from "@/components/action-button";
 import { cn, formatNumber } from "@/lib/utils";
 import {
   Activity,
@@ -30,6 +32,7 @@ import {
   Star,
   Search,
   ChevronDown,
+  RefreshCw,
 } from "lucide-react";
 
 /* ------------------------------------------------------------------ */
@@ -622,6 +625,14 @@ export default function CitationsPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold text-gray-900">Citations</h1>
+        <div className="flex items-center gap-2">
+        <ActionButton
+          label="Check NAP"
+          loadingLabel="Checking..."
+          icon={<RefreshCw className="h-3.5 w-3.5" />}
+          onClick={() => triggerCitationCheck(clientId)}
+          onSuccess={() => reload()}
+        />
         <button
           onClick={() => {
             setShowAddForm(true);
@@ -632,6 +643,7 @@ export default function CitationsPage() {
           <Plus className="h-4 w-4" />
           Add Citation
         </button>
+        </div>
       </div>
 
       {/* ---- Summary Cards ---- */}

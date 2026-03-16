@@ -16,19 +16,21 @@ import {
   ChevronRight,
   ClipboardCheck,
   Globe,
+  Loader2,
   MapPin,
   MessageSquare,
   Monitor,
   MousePointerClick,
   Navigation,
   Phone,
+  RefreshCw,
   Search,
   Smartphone,
   Star,
   TrendingUp,
   Users,
 } from "lucide-react";
-import { fetchClientSummary } from "@/lib/api";
+import { fetchClientSummary, syncClient } from "@/lib/api";
 import { cn, formatNumber, formatPercent } from "@/lib/utils";
 
 /* ---------- helper components ---------- */
@@ -203,6 +205,8 @@ export default function ClientDashboardPage() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [data, setData] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
+  const [syncing, setSyncing] = useState(false);
+  const [syncResult, setSyncResult] = useState<string | null>(null);
 
   useEffect(() => {
     fetchClientSummary(clientId)
@@ -231,15 +235,57 @@ export default function ClientDashboardPage() {
   return (
     <div>
       {/* Header */}
-      <div className="mb-6">
-        <h1 className="text-2xl font-semibold text-gray-900">
-          {String(client.name)}
-        </h1>
-        <p className="text-sm text-gray-500">
-          {client.city && client.state
-            ? `${client.city}, ${client.state}`
-            : String(client.domain)}
-        </p>
+      <div className="flex items-start justify-between mb-6">
+        <div>
+          <h1 className="text-2xl font-semibold text-gray-900">
+            {String(client.name)}
+          </h1>
+          <p className="text-sm text-gray-500">
+            {client.city && client.state
+              ? `${client.city}, ${client.state}`
+              : String(client.domain)}
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          {syncResult && (
+            <span className="text-xs text-green-600 bg-green-50 px-2 py-1 rounded">
+              {syncResult}
+            </span>
+          )}
+          <button
+            onClick={async () => {
+              setSyncing(true);
+              setSyncResult(null);
+              try {
+                const res = await syncClient(clientId);
+                setSyncResult(res.message);
+                // Reload dashboard after a delay
+                setTimeout(() => {
+                  fetchClientSummary(clientId).then((d) => setData(d as any));
+                  setSyncResult(null);
+                }, 5000);
+              } catch {
+                setSyncResult("Sync failed");
+              } finally {
+                setSyncing(false);
+              }
+            }}
+            disabled={syncing}
+            className={cn(
+              "inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-colors shadow-sm",
+              syncing
+                ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                : "bg-blue-600 text-white hover:bg-blue-700"
+            )}
+          >
+            {syncing ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <RefreshCw className="h-4 w-4" />
+            )}
+            {syncing ? "Syncing..." : "Sync All Data"}
+          </button>
+        </div>
       </div>
 
       {/* Row 1: Rankings Overview — 4 cards */}

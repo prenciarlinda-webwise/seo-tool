@@ -61,6 +61,36 @@ export function deleteClient(id: number) {
   return request<void>(`/clients/${id}/`, { method: "DELETE" });
 }
 
+export function syncClient(id: number) {
+  return request<{ message: string; results: Record<string, unknown> }>(`/clients/${id}/sync/`, {
+    method: "POST",
+  });
+}
+
+export function runDiscovery(clientId: number) {
+  return request<{ message: string }>(`/clients/${clientId}/run-discovery/`, { method: "POST" });
+}
+
+export function runRanks(clientId: number) {
+  return request<{ message: string }>(`/clients/${clientId}/run-ranks/`, { method: "POST" });
+}
+
+export function runBacklinks(clientId: number) {
+  return request<{ message: string }>(`/clients/${clientId}/run-backlinks/`, { method: "POST" });
+}
+
+export function runAudit(clientId: number) {
+  return request<{ message: string; audit_id: number }>(`/clients/${clientId}/run-audit/`, { method: "POST" });
+}
+
+export function runLighthouse(clientId: number) {
+  return request<{ message: string; scores: Record<string, number> }>(`/clients/${clientId}/run-lighthouse/`, { method: "POST" });
+}
+
+export function runCompetitors(clientId: number) {
+  return request<{ message: string }>(`/clients/${clientId}/run-competitors/`, { method: "POST" });
+}
+
 export async function importClients(file: File) {
   const form = new FormData();
   form.append("file", file);

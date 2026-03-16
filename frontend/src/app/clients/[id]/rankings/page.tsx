@@ -7,6 +7,7 @@ import {
   Calendar,
   ExternalLink,
   Plus,
+  RefreshCw,
   Search,
   TrendingDown,
   TrendingUp,
@@ -19,12 +20,15 @@ import {
   fetchCompetitors,
   createCompetitor,
   deleteCompetitor,
+  runRanks,
+  runCompetitors,
   type CompetitorData,
   type RankComparisonKeyword,
   type RankComparisonResponse,
   type RankComparisonSummary,
   type RankTypeSummary,
 } from "@/lib/api";
+import { ActionButton } from "@/components/action-button";
 import { cn, formatNumber } from "@/lib/utils";
 
 type RankFilter = "all" | "top10" | "top20" | "top50";
@@ -514,6 +518,13 @@ function CompetitorsSection({
             onDateCurrentChange={onDateCurrentChange}
             onDatePreviousChange={onDatePreviousChange}
           />
+          <ActionButton
+            label="Discover Competitors"
+            loadingLabel="Discovering..."
+            icon={<RefreshCw className="h-3.5 w-3.5" />}
+            onClick={() => runCompetitors(clientId)}
+            onSuccess={() => loadCompetitors()}
+          />
           {competitors.length > 0 && !showForm && (
             <button
               onClick={() => setShowForm(true)}
@@ -776,9 +787,20 @@ export default function RankingsPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-semibold text-gray-900 mb-2">
-        Rank Tracker
-      </h1>
+      <div className="flex items-center justify-between mb-2">
+        <h1 className="text-2xl font-semibold text-gray-900">
+          Rank Tracker
+        </h1>
+        <ActionButton
+          label="Run Check"
+          loadingLabel="Checking..."
+          icon={<RefreshCw className="h-3.5 w-3.5" />}
+          onClick={() => runRanks(clientId)}
+          onSuccess={() => {
+            fetchRankComparison(clientId, dateCurrent, datePrevious || dateCurrent).then(setData);
+          }}
+        />
+      </div>
 
       {/* Overview section */}
       {data && (

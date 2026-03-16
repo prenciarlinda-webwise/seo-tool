@@ -91,30 +91,286 @@ class ClientViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=["post"])
     def sync(self, request, pk=None):
-        """Manually trigger a full data sync for a client."""
+        """Full data sync: discovery → auto-promote → competitors → ranks → citations."""
         client = self.get_object()
-        from apps.discovery.tasks import monthly_keyword_discovery
-        from apps.rankings.tasks import weekly_rank_tracking
+        from apps.discovery.tasks import _discover_keywords_for_client
+        from apps.rankings.tasks import _check_keyword_rankings
         from apps.citations.tasks import check_citations_for_client
+        from apps.keywords.models import Keyword
+        from apps.competitors.models import Competitor
+        from django.conf import settings
+        from services.dataforseo import DataForSEOClient, SERPService, MapsService, LabsService
+        from datetime import date
+        from django.utils import timezone
+        import logging
 
-        triggered = []
+        logger = logging.getLogger(__name__)
+        results = {}
 
+        try:
+            api_client = DataForSEOClient(
+                login=settings.DATAFORSEO_LOGIN,
+                password=settings.DATAFORSEO_PASSWORD,
+            )
+        except Exception as e:
+            return Response({"error": f"DataForSEO connection failed: {e}"}, status=500)
+
+        # 1. Discovery — find keywords this domain ranks for
         if client.discovery_enabled:
-            monthly_keyword_discovery.delay()
-            triggered.append("discovery")
+            try:
+                disc = _discover_keywords_for_client(client)
+                results["discovery"] = disc
+            except Exception as e:
+                logger.exception("Discovery failed for %s", client.domain)
+                results["discovery"] = {"error": str(e)}
 
+        # 2. Auto-promote keywords: top 50 with volume >= 50
+        auto_promoted = 0
+        discovered = Keyword.objects.filter(
+            client=client, status="discovered",
+        )
+        for kw in discovered:
+            if (
+                kw.search_volume and kw.search_volume >= 50
+                and kw.discovery_rank and kw.discovery_rank <= 50
+            ):
+                kw.status = "tracked"
+                kw.promoted_at = timezone.now()
+                kw.save(update_fields=["status", "promoted_at", "updated_at"])
+                auto_promoted += 1
+        results["auto_promoted"] = auto_promoted
+
+        # 3. Discover competitors
+        try:
+            labs = LabsService(api_client)
+            comp_result = labs.get_competitors_domain(
+                client.domain, location_code=client.location_code, limit=10,
+            )
+            comp_created = 0
+            for item in comp_result.get("items", []):
+                domain = item.get("domain", "")
+                if domain and domain != client.domain:
+                    _, created = Competitor.objects.get_or_create(
+                        client=client, domain=domain,
+                        defaults={"name": domain, "is_auto_discovered": True},
+                    )
+                    if created:
+                        comp_created += 1
+            results["competitors_found"] = comp_created
+        except Exception as e:
+            logger.exception("Competitor discovery failed for %s", client.domain)
+            results["competitors_found"] = {"error": str(e)}
+
+        # 4. Rank tracking for all tracked keywords
         if client.is_active:
-            weekly_rank_tracking.delay()
-            triggered.append("rank_tracking")
+            try:
+                serp = SERPService(api_client)
+                maps = MapsService(api_client)
+                today = date.today()
+                tracked = Keyword.objects.filter(client=client, status="tracked")
+                checked = 0
+                for kw in tracked:
+                    try:
+                        _check_keyword_rankings(kw, client, today, serp, maps)
+                        checked += 1
+                    except Exception:
+                        logger.exception("Rank check failed: %s", kw.keyword_text)
+                results["rank_tracking"] = {"checked": checked}
+            except Exception as e:
+                logger.exception("Rank tracking failed for %s", client.domain)
+                results["rank_tracking"] = {"error": str(e)}
 
+        # 5. Citations
         if client.citations.exists():
-            check_citations_for_client.delay(client.id)
-            triggered.append("citations")
+            try:
+                check_citations_for_client(client.id)
+                results["citations"] = "checked"
+            except Exception as e:
+                results["citations"] = {"error": str(e)}
 
         return Response({
-            "message": f"Sync triggered for {client.name}",
-            "tasks": triggered,
+            "message": f"Sync complete for {client.name}",
+            "results": results,
         })
+
+    @action(detail=True, methods=["post"], url_path="run-discovery")
+    def run_discovery(self, request, pk=None):
+        """Run keyword discovery for this client."""
+        client = self.get_object()
+        from apps.discovery.tasks import _discover_keywords_for_client
+        try:
+            result = _discover_keywords_for_client(client)
+            return Response({"message": "Discovery complete", "result": result})
+        except Exception as e:
+            return Response({"error": str(e)}, status=500)
+
+    @action(detail=True, methods=["post"], url_path="run-ranks")
+    def run_ranks(self, request, pk=None):
+        """Run rank tracking for this client."""
+        client = self.get_object()
+        from apps.rankings.tasks import _check_keyword_rankings
+        from apps.keywords.models import Keyword
+        from services.dataforseo import DataForSEOClient, SERPService, MapsService
+        from django.conf import settings
+        from datetime import date
+
+        api = DataForSEOClient(settings.DATAFORSEO_LOGIN, settings.DATAFORSEO_PASSWORD)
+        serp, maps = SERPService(api), MapsService(api)
+        tracked = Keyword.objects.filter(client=client, status="tracked")
+        checked, failed = 0, 0
+        for kw in tracked:
+            try:
+                _check_keyword_rankings(kw, client, date.today(), serp, maps)
+                checked += 1
+            except Exception:
+                failed += 1
+        return Response({"message": f"Checked {checked}, failed {failed}"})
+
+    @action(detail=True, methods=["post"], url_path="run-backlinks")
+    def run_backlinks(self, request, pk=None):
+        """Pull backlink profile for this client."""
+        client = self.get_object()
+        from services.dataforseo import DataForSEOClient, BacklinksService
+        from apps.backlinks.models import BacklinkSnapshot, Backlink, ReferringDomain, AnchorText
+        from django.conf import settings
+        from datetime import date
+
+        api = DataForSEOClient(settings.DATAFORSEO_LOGIN, settings.DATAFORSEO_PASSWORD)
+        bl = BacklinksService(api)
+
+        summary = bl.get_summary(client.domain)
+        snap = BacklinkSnapshot.objects.create(
+            client=client, date=date.today(),
+            total_backlinks=summary.get("total_backlinks", 0),
+            referring_domains=summary.get("referring_domains", 0),
+            referring_ips=summary.get("referring_ips", 0),
+            broken_backlinks=summary.get("broken_backlinks", 0),
+            broken_pages=summary.get("broken_pages", 0),
+            dofollow=summary.get("dofollow", 0),
+            nofollow=summary.get("nofollow", 0),
+            rank=summary.get("rank"),
+        )
+
+        links = bl.get_backlinks(client.domain, limit=100)
+        for item in links.get("items", []):
+            Backlink.objects.create(
+                client=client, snapshot=snap,
+                source_url=item.get("url_from", ""),
+                source_domain=item.get("domain_from", ""),
+                target_url=item.get("url_to", ""),
+                anchor=item.get("anchor", ""),
+                is_dofollow=item.get("dofollow", True),
+                source_rank=item.get("rank"),
+                first_seen=item.get("first_seen"),
+                last_seen=item.get("last_seen"),
+            )
+
+        domains = bl.get_referring_domains(client.domain, limit=100)
+        for item in domains.get("items", []):
+            ReferringDomain.objects.create(
+                client=client, snapshot=snap,
+                domain=item.get("domain", ""),
+                backlinks_count=item.get("backlinks", 0),
+                dofollow_count=item.get("dofollow", 0),
+                nofollow_count=item.get("nofollow", 0),
+                rank=item.get("rank"),
+            )
+
+        anchors = bl.get_anchors(client.domain, limit=100)
+        for item in anchors.get("items", []):
+            AnchorText.objects.create(
+                client=client, snapshot=snap,
+                anchor=item.get("anchor", ""),
+                backlinks_count=item.get("backlinks", 0),
+                referring_domains=item.get("referring_domains", 0),
+                dofollow=item.get("dofollow", 0),
+            )
+
+        return Response({
+            "message": f"Backlinks pulled: {snap.total_backlinks} links, {snap.referring_domains} domains",
+        })
+
+    @action(detail=True, methods=["post"], url_path="run-audit")
+    def run_audit(self, request, pk=None):
+        """Start a site audit crawl."""
+        client = self.get_object()
+        from services.dataforseo import DataForSEOClient, OnPageService
+        from apps.onpage.models import SiteAudit
+        from django.conf import settings
+
+        api = DataForSEOClient(settings.DATAFORSEO_LOGIN, settings.DATAFORSEO_PASSWORD)
+        op = OnPageService(api)
+        url = client.website_url or f"https://{client.domain}"
+
+        task_id = op.start_crawl(url, max_pages=200)
+        audit = SiteAudit.objects.create(
+            client=client, target_url=url, max_pages=200,
+            status="crawling", started_at=timezone.now(),
+            dataforseo_task_id=task_id,
+        )
+        return Response({
+            "message": f"Audit started for {url}",
+            "audit_id": audit.id,
+            "task_id": task_id,
+        })
+
+    @action(detail=True, methods=["post"], url_path="run-lighthouse")
+    def run_lighthouse(self, request, pk=None):
+        """Run Lighthouse test."""
+        client = self.get_object()
+        from services.dataforseo import DataForSEOClient, OnPageService
+        from apps.onpage.models import LighthouseResult
+        from django.conf import settings
+
+        api = DataForSEOClient(settings.DATAFORSEO_LOGIN, settings.DATAFORSEO_PASSWORD)
+        op = OnPageService(api)
+        url = client.website_url or f"https://{client.domain}"
+
+        result = op.run_lighthouse(url, for_mobile=True)
+        if not result:
+            return Response({"error": "No result returned"}, status=500)
+
+        cats = result.get("categories", {})
+        lr = LighthouseResult.objects.create(
+            client=client, url=url, is_mobile=True,
+            performance_score=int((cats.get("performance", {}).get("score") or 0) * 100),
+            accessibility_score=int((cats.get("accessibility", {}).get("score") or 0) * 100),
+            best_practices_score=int((cats.get("best-practices", {}).get("score") or 0) * 100),
+            seo_score=int((cats.get("seo", {}).get("score") or 0) * 100),
+        )
+        return Response({
+            "message": "Lighthouse complete",
+            "scores": {
+                "performance": lr.performance_score,
+                "accessibility": lr.accessibility_score,
+                "best_practices": lr.best_practices_score,
+                "seo": lr.seo_score,
+            },
+        })
+
+    @action(detail=True, methods=["post"], url_path="run-competitors")
+    def run_competitors(self, request, pk=None):
+        """Discover competitor domains."""
+        client = self.get_object()
+        from services.dataforseo import DataForSEOClient, LabsService
+        from apps.competitors.models import Competitor
+        from django.conf import settings
+
+        api = DataForSEOClient(settings.DATAFORSEO_LOGIN, settings.DATAFORSEO_PASSWORD)
+        labs = LabsService(api)
+
+        result = labs.get_competitors_domain(client.domain, location_code=client.location_code, limit=20)
+        created = 0
+        for item in result.get("items", []):
+            domain = item.get("domain", "")
+            if domain and domain != client.domain:
+                _, was_new = Competitor.objects.get_or_create(
+                    client=client, domain=domain,
+                    defaults={"name": domain, "is_auto_discovered": True},
+                )
+                if was_new:
+                    created += 1
+        return Response({"message": f"Found {created} new competitors"})
 
     @action(detail=True, methods=["get"])
     def summary(self, request, pk=None):
