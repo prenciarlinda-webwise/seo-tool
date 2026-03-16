@@ -7,7 +7,7 @@ class DeliverableSerializer(serializers.ModelSerializer):
     class Meta:
         model = Deliverable
         fields = "__all__"
-        read_only_fields = ["created_at", "updated_at"]
+        read_only_fields = ["created_at", "updated_at", "plan_item"]
 
 
 class PlanItemSerializer(serializers.ModelSerializer):
@@ -20,7 +20,7 @@ class PlanItemSerializer(serializers.ModelSerializer):
     class Meta:
         model = PlanItem
         fields = "__all__"
-        read_only_fields = ["created_at", "updated_at"]
+        read_only_fields = ["created_at", "updated_at", "plan"]
 
 
 class QuarterlyPlanSerializer(serializers.ModelSerializer):
@@ -33,7 +33,7 @@ class QuarterlyPlanSerializer(serializers.ModelSerializer):
     class Meta:
         model = QuarterlyPlan
         fields = "__all__"
-        read_only_fields = ["created_at", "updated_at"]
+        read_only_fields = ["created_at", "updated_at", "client"]
 
     def get_items_count(self, obj):
         return obj.items.count()
@@ -54,7 +54,7 @@ class QuarterlyPlanListSerializer(serializers.ModelSerializer):
     class Meta:
         model = QuarterlyPlan
         fields = "__all__"
-        read_only_fields = ["created_at", "updated_at"]
+        read_only_fields = ["created_at", "updated_at", "client"]
 
     def get_items_count(self, obj):
         return obj.items.count()

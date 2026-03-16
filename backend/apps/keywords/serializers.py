@@ -25,7 +25,7 @@ class KeywordSerializer(serializers.ModelSerializer):
         model = Keyword
         fields = "__all__"
         read_only_fields = [
-            "created_at", "updated_at",
+            "created_at", "updated_at", "client",
             "current_organic_rank", "current_organic_url",
             "current_maps_rank", "previous_organic_rank",
             "previous_maps_rank", "rank_change", "last_checked_at",

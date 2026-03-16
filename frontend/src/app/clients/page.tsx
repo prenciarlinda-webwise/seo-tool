@@ -1,20 +1,25 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   ArrowDownRight,
   ArrowUpRight,
   BarChart3,
   ChevronRight,
   Download,
+  Edit,
+  MoreVertical,
   Plus,
+  Power,
   Search,
   Sparkles,
+  Trash2,
   TrendingUp,
   Upload,
 } from "lucide-react";
-import { fetchClients, importClients, exportClientsUrl, type Client } from "@/lib/api";
+import { fetchClients, updateClient, deleteClient, importClients, exportClientsUrl, type Client } from "@/lib/api";
 import ImportModal from "@/components/import-modal";
 import { cn, formatNumber } from "@/lib/utils";
 
@@ -37,11 +42,120 @@ function MetricPill({
   );
 }
 
+function ClientActions({
+  client,
+  onUpdate,
+}: {
+  client: Client;
+  onUpdate: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [confirming, setConfirming] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    function handleClick(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        setOpen(false);
+        setConfirming(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [open]);
+
+  async function handleToggleActive() {
+    await updateClient(client.id, { is_active: !client.is_active });
+    setOpen(false);
+    onUpdate();
+  }
+
+  async function handleDelete() {
+    if (!confirming) {
+      setConfirming(true);
+      return;
+    }
+    await deleteClient(client.id);
+    setOpen(false);
+    setConfirming(false);
+    onUpdate();
+  }
+
+  return (
+    <div className="relative" ref={ref}>
+      <button
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          setOpen(!open);
+          setConfirming(false);
+        }}
+        className="p-1.5 rounded-md hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors"
+      >
+        <MoreVertical className="h-4 w-4" />
+      </button>
+      {open && (
+        <div className="absolute right-0 top-full mt-1 w-44 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
+          <Link
+            href={`/clients/${client.id}`}
+            className="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
+          >
+            <ChevronRight className="h-3.5 w-3.5" />
+            View Dashboard
+          </Link>
+          <Link
+            href={`/clients/new?edit=${client.id}`}
+            className="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
+          >
+            <Edit className="h-3.5 w-3.5" />
+            Edit Client
+          </Link>
+          <button
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              handleToggleActive();
+            }}
+            className="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 w-full text-left"
+          >
+            <Power className="h-3.5 w-3.5" />
+            {client.is_active ? "Deactivate" : "Activate"}
+          </button>
+          <div className="border-t border-gray-100 my-1" />
+          <button
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              handleDelete();
+            }}
+            className={cn(
+              "flex items-center gap-2 px-3 py-2 text-sm w-full text-left",
+              confirming
+                ? "text-white bg-red-600 hover:bg-red-700"
+                : "text-red-600 hover:bg-red-50"
+            )}
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+            {confirming ? "Confirm Delete" : "Delete Client"}
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function ClientsPage() {
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [showImport, setShowImport] = useState(false);
+
+  const router = useRouter();
+
+  function reload() {
+    fetchClients().then((res) => setClients(res.results));
+  }
 
   useEffect(() => {
     fetchClients()
@@ -136,13 +250,14 @@ export default function ClientsPage() {
       </div>
 
       {/* Column headers */}
-      <div className="hidden md:grid grid-cols-[1fr_100px_100px_100px_110px_110px] gap-4 px-5 py-2.5 text-xs font-medium text-gray-500 uppercase tracking-wider">
+      <div className="hidden md:grid grid-cols-[1fr_100px_100px_100px_110px_110px_40px] gap-4 px-5 py-2.5 text-xs font-medium text-gray-500 uppercase tracking-wider">
         <span>Client</span>
         <span className="text-center">Rankings Up</span>
         <span className="text-center">Rankings Down</span>
         <span className="text-center">New</span>
         <span className="text-center">Organic Sessions</span>
         <span className="text-center">Avg Position</span>
+        <span></span>
       </div>
 
       {/* Client cards */}
@@ -155,12 +270,12 @@ export default function ClientsPage() {
           </div>
         ) : (
           filtered.map((client) => (
-            <Link
+            <div
               key={client.id}
-              href={`/clients/${client.id}`}
-              className="block bg-white rounded-lg border border-gray-200 hover:border-blue-300 hover:shadow-md transition-all group"
+              onClick={() => router.push(`/clients/${client.id}`)}
+              className="block bg-white rounded-lg border border-gray-200 hover:border-blue-300 hover:shadow-md transition-all group cursor-pointer"
             >
-              <div className="grid grid-cols-1 md:grid-cols-[1fr_100px_100px_100px_110px_110px] gap-4 items-center px-5 py-4">
+              <div className="grid grid-cols-1 md:grid-cols-[1fr_100px_100px_100px_110px_110px_40px] gap-4 items-center px-5 py-4">
                 {/* Client info */}
                 <div className="flex items-center gap-4">
                   {/* Avatar */}
@@ -259,8 +374,13 @@ export default function ClientsPage() {
                     <span className="text-gray-300">-</span>
                   )}
                 </div>
+
+                {/* Actions */}
+                <div className="text-center" onClick={(e) => e.stopPropagation()}>
+                  <ClientActions client={client} onUpdate={reload} />
+                </div>
               </div>
-            </Link>
+            </div>
           ))
         )}
       </div>

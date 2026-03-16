@@ -7,7 +7,7 @@ class CompetitorSerializer(serializers.ModelSerializer):
     class Meta:
         model = Competitor
         fields = "__all__"
-        read_only_fields = ["created_at"]
+        read_only_fields = ["created_at", "client"]
 
 
 class CompetitorSnapshotSerializer(serializers.ModelSerializer):

@@ -7,7 +7,7 @@ class GA4PropertySerializer(serializers.ModelSerializer):
     class Meta:
         model = GA4Property
         fields = "__all__"
-        read_only_fields = ["created_at", "updated_at"]
+        read_only_fields = ["created_at", "updated_at", "client"]
 
 
 class GA4TrafficSnapshotSerializer(serializers.ModelSerializer):
