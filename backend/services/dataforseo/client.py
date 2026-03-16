@@ -58,7 +58,14 @@ class DataForSEOClient:
             logger.error("DataForSEO request failed: %s", exc)
             raise
 
-        data = resp.json()
+        try:
+            data = resp.json()
+        except ValueError:
+            raise DataForSEOAPIError(
+                status_code=resp.status_code,
+                message=f"Non-JSON response (HTTP {resp.status_code})",
+                response={},
+            )
 
         if resp.status_code == 429:
             raise DataForSEORateLimitError("Rate limit exceeded")

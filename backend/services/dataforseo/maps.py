@@ -78,7 +78,7 @@ class MapsService:
         business_name_lower = business_name.lower() if business_name else ""
 
         matched = False
-        for item in items:
+        for item in items or []:
             item_domain = (item.get("domain") or "").lower().replace("www.", "")
             item_place_id = item.get("place_id") or ""
             item_title = (item.get("title") or "").lower()

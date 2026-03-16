@@ -62,6 +62,12 @@ def _discover_keywords_for_client(client):
             limit=client.max_discovery_keywords,
         )
 
+        if not task_result:
+            logger.warning(
+                "Empty ranked keywords result for client=%s", client.domain,
+            )
+            task_result = {}
+
         keywords_data = LabsService.parse_ranked_keywords(task_result)
 
         # Get existing keyword texts for this client

@@ -79,7 +79,7 @@ class SERPService:
         domain_clean = domain.lower().replace("www.", "")
         organic_items = []
 
-        for item in items:
+        for item in items or []:
             item_type = item.get("type", "")
 
             # Track SERP features

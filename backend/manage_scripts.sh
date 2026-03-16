@@ -8,8 +8,7 @@
 # USAGE: Copy-paste any block below into your VPS terminal.
 # Or run: bash manage_scripts.sh <command>
 
-SETTINGS="DJANGO_SETTINGS_MODULE=config.settings.production"
-SHELL_CMD="$SETTINGS python manage.py shell -c"
+export DJANGO_SETTINGS_MODULE=config.settings.production
 
 case "$1" in
 
@@ -18,7 +17,7 @@ case "$1" in
 # ============================================================
 discovery-all)
 echo "Running discovery for ALL active clients..."
-$SHELL_CMD "
+python manage.py shell -c "
 from apps.discovery.tasks import monthly_keyword_discovery
 result = monthly_keyword_discovery()
 print(result)
@@ -27,7 +26,7 @@ print(result)
 
 discovery-client)
 echo "Running discovery for client ID $2..."
-$SHELL_CMD "
+python manage.py shell -c "
 from apps.clients.models import Client
 from apps.discovery.tasks import _discover_keywords_for_client
 c = Client.objects.get(id=$2)
@@ -41,7 +40,7 @@ print(result)
 # ============================================================
 rank-all)
 echo "Running rank tracking for ALL active clients..."
-$SHELL_CMD "
+python manage.py shell -c "
 from apps.rankings.tasks import weekly_rank_tracking
 result = weekly_rank_tracking()
 print(result)
@@ -50,7 +49,7 @@ print(result)
 
 rank-client)
 echo "Running rank tracking for client ID $2..."
-$SHELL_CMD "
+python manage.py shell -c "
 from django.conf import settings
 from apps.clients.models import Client
 from apps.keywords.models import Keyword, KeywordStatus
@@ -83,7 +82,7 @@ print('Done!')
 # ============================================================
 citations-check)
 echo "Checking citations for client ID $2..."
-$SHELL_CMD "
+python manage.py shell -c "
 from apps.citations.tasks import check_citations_for_client
 result = check_citations_for_client($2)
 print(result)
@@ -95,7 +94,7 @@ print(result)
 # ============================================================
 backlinks-pull)
 echo "Pulling backlinks for client ID $2..."
-$SHELL_CMD "
+python manage.py shell -c "
 from django.conf import settings
 from datetime import date
 from apps.clients.models import Client
@@ -174,7 +173,7 @@ print('Done!')
 # ============================================================
 audit-start)
 echo "Starting site audit for client ID $2..."
-$SHELL_CMD "
+python manage.py shell -c "
 from django.conf import settings
 from django.utils import timezone
 from apps.clients.models import Client
@@ -202,7 +201,7 @@ print('Run \"audit-results <client_id> <audit_id>\" when crawl is complete (~2-5
 
 audit-results)
 echo "Fetching audit results for client $2, audit $3..."
-$SHELL_CMD "
+python manage.py shell -c "
 from django.conf import settings
 from django.utils import timezone
 from apps.clients.models import Client
@@ -255,7 +254,7 @@ print('Done!')
 # ============================================================
 lighthouse)
 echo "Running Lighthouse for client ID $2..."
-$SHELL_CMD "
+python manage.py shell -c "
 from django.conf import settings
 from apps.clients.models import Client
 from apps.onpage.models import LighthouseResult
@@ -293,7 +292,7 @@ print('Done!')
 # ============================================================
 competitors-discover)
 echo "Discovering competitors for client ID $2..."
-$SHELL_CMD "
+python manage.py shell -c "
 from django.conf import settings
 from apps.clients.models import Client
 from apps.competitors.models import Competitor
@@ -346,7 +345,7 @@ echo "Full sync complete!"
 # ============================================================
 enable-all)
 echo "Enabling all tracking for all clients..."
-$SHELL_CMD "
+python manage.py shell -c "
 from apps.clients.models import Client
 from apps.keywords.models import Keyword
 
@@ -366,7 +365,7 @@ print(f'Maps enabled for {count} keywords')
 # 10. STATUS — Show all clients and their data counts
 # ============================================================
 status)
-$SHELL_CMD "
+python manage.py shell -c "
 from apps.clients.models import Client
 from apps.keywords.models import Keyword
 from apps.rankings.models import SERPResult
@@ -374,7 +373,8 @@ from apps.backlinks.models import BacklinkSnapshot
 from apps.citations.models import Citation
 from apps.onpage.models import SiteAudit
 
-print(f'{'Client':<30} {'KWs':>5} {'Ranks':>6} {'BL':>5} {'Cit':>5} {'Audit':>5}')
+header = '{:<30} {:>5} {:>6} {:>5} {:>5} {:>5}'.format('Client', 'KWs', 'Ranks', 'BL', 'Cit', 'Audit')
+print(header)
 print('-' * 65)
 for c in Client.objects.all():
     kws = c.keywords.filter(status='tracked').count()
@@ -382,7 +382,8 @@ for c in Client.objects.all():
     bl = BacklinkSnapshot.objects.filter(client=c).count()
     cit = Citation.objects.filter(client=c).count()
     audits = SiteAudit.objects.filter(client=c).count()
-    print(f'{c.domain:<30} {kws:>5} {ranks:>6} {bl:>5} {cit:>5} {audits:>5}')
+    row = '{:<30} {:>5} {:>6} {:>5} {:>5} {:>5}'.format(c.domain, kws, ranks, bl, cit, audits)
+    print(row)
 "
 ;;
 
@@ -391,7 +392,7 @@ for c in Client.objects.all():
 # ============================================================
 seed-citations)
 echo "Seeding citation directories for client ID $2..."
-$SHELL_CMD "
+python manage.py shell -c "
 from apps.clients.models import Client
 from apps.citations.models import CitationDirectory, Citation
 

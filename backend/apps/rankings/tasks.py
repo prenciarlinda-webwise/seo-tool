@@ -68,6 +68,14 @@ def _check_keyword_rankings(keyword, client, today, serp_service, maps_service):
             language_code=language_code,
         )
 
+        if not task_result:
+            logger.warning(
+                "Empty SERP result for keyword=%s client=%s",
+                keyword.keyword_text,
+                client.domain,
+            )
+            task_result = {}
+
         position = serp_service.find_domain_position(task_result, client.domain)
 
         # Get previous result for change tracking
@@ -144,6 +152,14 @@ def _check_keyword_rankings(keyword, client, today, serp_service, maps_service):
             location_code=location_code,
             language_code=language_code,
         )
+
+        if not task_result:
+            logger.warning(
+                "Empty Maps result for keyword=%s client=%s",
+                keyword.keyword_text,
+                client.domain,
+            )
+            task_result = {}
 
         position = maps_service.find_business_position(
             task_result,

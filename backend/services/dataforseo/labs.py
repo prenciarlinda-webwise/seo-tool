@@ -63,7 +63,7 @@ class LabsService:
             return keywords
 
         items = result_data[0].get("items", [])
-        for item in items:
+        for item in items or []:
             kw_data = item.get("keyword_data") or {}
             serp_element = item.get("ranked_serp_element") or {}
             serp_item = serp_element.get("serp_item") or {}

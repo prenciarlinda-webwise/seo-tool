@@ -100,7 +100,10 @@ def _check_single_citation(
                     info, canonical_name, canonical_phone, canonical_address, canonical_zip
                 )
         except Exception:
-            pass
+            logger.warning(
+                "Google business lookup failed for %s on %s",
+                client.domain, dir_domain, exc_info=True,
+            )
 
     # For other directories, scrape the page if we have a listing URL
     if citation.listing_url:
@@ -110,7 +113,10 @@ def _check_single_citation(
                 page_data, canonical_name, canonical_phone, canonical_address, canonical_zip
             )
         except Exception:
-            pass
+            logger.warning(
+                "Page scrape failed for citation %s (%s)",
+                citation.listing_url, client.domain, exc_info=True,
+            )
 
     # No listing URL — try to detect via the directory search
     return {"status": "not_found"}
