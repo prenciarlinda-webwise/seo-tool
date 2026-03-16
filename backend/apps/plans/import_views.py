@@ -42,7 +42,7 @@ class PlanItemImportView(APIView):
         if not reader.fieldnames:
             return Response({"error": "CSV has no headers."}, status=status.HTTP_400_BAD_REQUEST)
 
-        headers = {h.strip().lower() for h in reader.fieldnames}
+        headers = {h.strip().lower() for h in reader.fieldnames if h}
         if "category" not in headers:
             return Response({"error": "Missing required column: category"}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -50,7 +50,11 @@ class PlanItemImportView(APIView):
         errors = []
 
         for i, row in enumerate(reader, start=2):
-            row = {k.strip().lower(): (v.strip() if v else "") for k, v in row.items()}
+            row = {
+                (k.strip().lower() if k else ""): (v.strip() if v else "")
+                for k, v in row.items()
+                if k
+            }
 
             category = row.get("category", "").strip()
             if category not in self.VALID_CATEGORIES:
