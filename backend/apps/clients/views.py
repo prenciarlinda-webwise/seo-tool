@@ -14,11 +14,57 @@ from .serializers import ClientListSerializer, ClientSerializer
 
 
 class ClientViewSet(viewsets.ModelViewSet):
-    queryset = Client.objects.all()
     serializer_class = ClientSerializer
     search_fields = ["name", "domain"]
     filterset_fields = ["is_active", "track_organic", "track_maps"]
     ordering_fields = ["name", "domain", "created_at"]
+
+    def get_queryset(self):
+        qs = Client.objects.all()
+        if self.action == "list":
+            # Single query with all annotations — no N+1
+            from django.db.models import Avg, Count, Q, Subquery, OuterRef
+            from apps.analytics.models import GA4TrafficSnapshot
+
+            latest_traffic = (
+                GA4TrafficSnapshot.objects.filter(client=OuterRef("pk"))
+                .order_by("-date")
+                .values("organic_sessions")[:1]
+            )
+
+            qs = qs.annotate(
+                tracked_keywords_count=Count(
+                    "keywords", filter=Q(keywords__status="tracked")
+                ),
+                discovered_keywords_count=Count(
+                    "keywords", filter=Q(keywords__status="discovered")
+                ),
+                rankings_up=Count(
+                    "keywords",
+                    filter=Q(keywords__status="tracked", keywords__rank_change__gt=0),
+                ),
+                rankings_down=Count(
+                    "keywords",
+                    filter=Q(keywords__status="tracked", keywords__rank_change__lt=0),
+                ),
+                rankings_new=Count(
+                    "keywords",
+                    filter=Q(
+                        keywords__status="tracked",
+                        keywords__current_organic_rank__isnull=False,
+                        keywords__previous_organic_rank__isnull=True,
+                    ),
+                ),
+                avg_position=Avg(
+                    "keywords__current_organic_rank",
+                    filter=Q(
+                        keywords__status="tracked",
+                        keywords__current_organic_rank__isnull=False,
+                    ),
+                ),
+                organic_sessions=Subquery(latest_traffic),
+            )
+        return qs
 
     def get_serializer_class(self):
         if self.action == "list":
