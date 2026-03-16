@@ -22,10 +22,11 @@ class DataForSEOClient:
         self.session.auth = (login, password)
         self.session.headers.update({"Content-Type": "application/json"})
 
+        # Only retry on 429 and 502/503 — NOT 500/504 (those indicate real errors)
         retry = Retry(
-            total=3,
-            backoff_factor=1,
-            status_forcelist=[429, 500, 502, 503, 504],
+            total=2,
+            backoff_factor=0.5,
+            status_forcelist=[429, 502, 503],
         )
         adapter = HTTPAdapter(max_retries=retry)
         self.session.mount("https://", adapter)
@@ -38,22 +39,16 @@ class DataForSEOClient:
             time.sleep(self.MIN_REQUEST_INTERVAL - elapsed)
 
     def post(self, endpoint: str, payload: list[dict]) -> dict:
-        """Send a POST request to a DataForSEO endpoint.
-
-        Args:
-            endpoint: API path after /v3/ (e.g., "serp/google/organic/live/regular")
-            payload: List of task dicts as required by the API.
-
-        Returns:
-            Parsed JSON response dict.
-        """
         url = f"{BASE_URL}/{endpoint}"
         self._rate_limit()
 
         logger.debug("DataForSEO POST %s with %d task(s)", endpoint, len(payload))
         try:
-            resp = self.session.post(url, json=payload, timeout=60)
+            resp = self.session.post(url, json=payload, timeout=30)
             self._last_request_time = time.monotonic()
+        except requests.Timeout:
+            logger.error("DataForSEO timeout: %s", endpoint)
+            raise DataForSEOAPIError(504, f"Timeout calling {endpoint}", {})
         except requests.RequestException as exc:
             logger.error("DataForSEO request failed: %s", exc)
             raise
@@ -77,6 +72,7 @@ class DataForSEOClient:
                 response=data,
             )
 
+        # Check top-level status
         status_code = data.get("status_code", 0)
         if status_code != 20000:
             raise DataForSEOAPIError(
@@ -84,5 +80,15 @@ class DataForSEOClient:
                 message=data.get("status_message", "Unknown error"),
                 response=data,
             )
+
+        # Check individual task statuses for subscription/access errors
+        for task in data.get("tasks", []):
+            task_status = task.get("status_code", 20000)
+            if task_status == 40204:
+                raise DataForSEOAPIError(
+                    status_code=40204,
+                    message=f"Subscription required for this API: {task.get('status_message', '')}",
+                    response=data,
+                )
 
         return data
