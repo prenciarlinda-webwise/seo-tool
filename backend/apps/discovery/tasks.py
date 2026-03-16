@@ -48,6 +48,8 @@ def _discover_keywords_for_client(client):
     labs_service = LabsService(api_client)
 
     today = date.today()
+    # Delete existing run for today if re-running
+    DiscoveryRun.objects.filter(client=client, run_date=today).delete()
     run = DiscoveryRun.objects.create(
         client=client,
         run_date=today,
