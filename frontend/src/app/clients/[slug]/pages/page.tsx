@@ -6,6 +6,7 @@ import {
   ChevronDown,
   ChevronRight,
   ClipboardList,
+  ExternalLink,
   FileText,
   Search,
   Target,
@@ -13,8 +14,8 @@ import {
   TrendingUp,
   Zap,
 } from "lucide-react";
-import { fetchPages, type PageData, type PageKeyword } from "@/lib/api";
-import { cn, formatNumber } from "@/lib/utils";
+import { fetchPages, fetchClient, type PageData, type PageKeyword } from "@/lib/api";
+import { cn, formatNumber, buildSerpUrl } from "@/lib/utils";
 
 function RankBadgeSmall({ rank }: { rank: number | null }) {
   if (rank == null) return <span className="text-gray-300">-</span>;
@@ -55,7 +56,7 @@ function ChangeIndicator({ change }: { change: number | null }) {
   );
 }
 
-function PageRow({ page }: { page: PageData }) {
+function PageRow({ page, location }: { page: PageData; location: string }) {
   const [expanded, setExpanded] = useState(false);
 
   let displayPath = page.url;
@@ -170,6 +171,15 @@ function PageRow({ page }: { page: PageData }) {
                   <td className="px-8 py-2">
                     <div className="flex items-center gap-1.5">
                       <span className="text-sm text-gray-900">{kw.keyword_text}</span>
+                      <a
+                        href={buildSerpUrl(kw.keyword_text, location)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-gray-300 hover:text-green-600 transition-colors"
+                        title="View SERP"
+                      >
+                        <ExternalLink className="h-3 w-3" />
+                      </a>
                       {kw.in_plan && (
                         <ClipboardList className="h-3 w-3 text-indigo-500" />
                       )}
@@ -221,23 +231,28 @@ function PageRow({ page }: { page: PageData }) {
 type SortKey = "keywords" | "traffic" | "position" | "volume";
 
 export default function PagesPage() {
-  const { id } = useParams<{ id: string }>();
-  const clientId = Number(id);
+  const { slug } = useParams<{ slug: string }>();
+  const clientSlug = slug;
   const [data, setData] = useState<PageData[]>([]);
   const [totalTraffic, setTotalTraffic] = useState(0);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState<SortKey>("keywords");
   const [showPlanOnly, setShowPlanOnly] = useState(false);
+  const [clientLocation, setClientLocation] = useState("");
 
   useEffect(() => {
-    fetchPages(clientId)
+    fetchClient(clientSlug).then((c) => {
+      const loc = [c.city, c.state].filter(Boolean).join(", ");
+      setClientLocation(loc);
+    });
+    fetchPages(clientSlug)
       .then((res) => {
         setData(res.pages);
         setTotalTraffic(res.total_traffic);
       })
       .finally(() => setLoading(false));
-  }, [clientId]);
+  }, [clientSlug]);
 
   let filtered = data.filter(
     (p) =>
@@ -381,7 +396,7 @@ export default function PagesPage() {
               : "No pages match your filter."}
           </div>
         ) : (
-          filtered.map((page) => <PageRow key={page.url} page={page} />)
+          filtered.map((page) => <PageRow key={page.url} page={page} location={clientLocation} />)
         )}
 
         <div className="px-5 py-2.5 border-t border-gray-100 bg-gray-50/50 text-xs text-gray-400">

@@ -10,7 +10,11 @@ class ClientListSerializer(serializers.ModelSerializer):
     rankings_up = serializers.IntegerField(read_only=True, default=0)
     rankings_down = serializers.IntegerField(read_only=True, default=0)
     rankings_new = serializers.IntegerField(read_only=True, default=0)
-    avg_position = serializers.FloatField(read_only=True, default=None)
+    avg_position = serializers.SerializerMethodField()
+
+    def get_avg_position(self, obj):
+        val = getattr(obj, "avg_position", None)
+        return round(val, 1) if val is not None else None
     organic_sessions = serializers.IntegerField(read_only=True, default=None)
 
     class Meta:

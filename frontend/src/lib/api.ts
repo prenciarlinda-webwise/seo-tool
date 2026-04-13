@@ -35,12 +35,12 @@ export function fetchClients() {
   return request<PaginatedResponse<Client>>("/clients/");
 }
 
-export function fetchClient(id: number) {
-  return request<Client>(`/clients/${id}/`);
+export function fetchClient(slug: string) {
+  return request<Client>(`/clients/${slug}/`);
 }
 
-export function fetchClientSummary(id: number) {
-  return request<ClientSummary>(`/clients/${id}/summary/`);
+export function fetchClientSummary(slug: string) {
+  return request<ClientSummary>(`/clients/${slug}/summary/`);
 }
 
 export function createClient(data: Partial<Client>) {
@@ -50,45 +50,49 @@ export function createClient(data: Partial<Client>) {
   });
 }
 
-export function updateClient(id: number, data: Partial<Client>) {
-  return request<Client>(`/clients/${id}/`, {
+export function updateClient(slug: string, data: Partial<Client>) {
+  return request<Client>(`/clients/${slug}/`, {
     method: "PATCH",
     body: JSON.stringify(data),
   });
 }
 
-export function deleteClient(id: number) {
-  return request<void>(`/clients/${id}/`, { method: "DELETE" });
+export function deleteClient(slug: string) {
+  return request<void>(`/clients/${slug}/`, { method: "DELETE" });
 }
 
-export function syncClient(id: number) {
-  return request<{ message: string; results: Record<string, unknown> }>(`/clients/${id}/sync/`, {
+export function syncClient(slug: string) {
+  return request<{ message: string; results: Record<string, unknown> }>(`/clients/${slug}/sync/`, {
     method: "POST",
   });
 }
 
-export function runDiscovery(clientId: number) {
-  return request<{ message: string }>(`/clients/${clientId}/run-discovery/`, { method: "POST" });
+export function runDiscovery(slug: string) {
+  return request<{ message: string }>(`/clients/${slug}/run-discovery/`, { method: "POST" });
 }
 
-export function runRanks(clientId: number) {
-  return request<{ message: string }>(`/clients/${clientId}/run-ranks/`, { method: "POST" });
+export function runRanks(slug: string) {
+  return request<{ message: string }>(`/clients/${slug}/run-ranks/`, { method: "POST" });
 }
 
-export function runBacklinks(clientId: number) {
-  return request<{ message: string }>(`/clients/${clientId}/run-backlinks/`, { method: "POST" });
+export function runBacklinks(slug: string) {
+  return request<{ message: string }>(`/clients/${slug}/run-backlinks/`, { method: "POST" });
 }
 
-export function runAudit(clientId: number) {
-  return request<{ message: string; audit_id: number }>(`/clients/${clientId}/run-audit/`, { method: "POST" });
+export function runAudit(slug: string) {
+  return request<{ message: string; audit_id: number }>(`/clients/${slug}/run-audit/`, { method: "POST" });
 }
 
-export function runLighthouse(clientId: number) {
-  return request<{ message: string; scores: Record<string, number> }>(`/clients/${clientId}/run-lighthouse/`, { method: "POST" });
+export function fetchAuditResults(slug: string) {
+  return request<{ message: string; status: string; audit_id?: number }>(`/clients/${slug}/fetch-audit-results/`, { method: "POST" });
 }
 
-export function runCompetitors(clientId: number) {
-  return request<{ message: string }>(`/clients/${clientId}/run-competitors/`, { method: "POST" });
+export function runLighthouse(slug: string) {
+  return request<{ message: string; scores: Record<string, number> }>(`/clients/${slug}/run-lighthouse/`, { method: "POST" });
+}
+
+export function runCompetitors(slug: string) {
+  return request<{ message: string }>(`/clients/${slug}/run-competitors/`, { method: "POST" });
 }
 
 export async function importClients(file: File) {
@@ -103,62 +107,62 @@ export function exportClientsUrl() {
   return `${API_URL}/clients/export/`;
 }
 
-export async function importCitations(clientId: number, file: File) {
+export async function importCitations(clientSlug: string, file: File) {
   const form = new FormData();
   form.append("file", file);
-  const res = await fetch(`${API_URL}/clients/${clientId}/citations/import/`, { method: "POST", body: form });
+  const res = await fetch(`${API_URL}/clients/${clientSlug}/citations/import/`, { method: "POST", body: form });
   if (!res.ok) throw new Error(await res.text());
   return res.json() as Promise<{ created: number; skipped: number; errors: string[]; message: string }>;
 }
 
-export function exportCitationsUrl(clientId: number) {
-  return `${API_URL}/clients/${clientId}/citations/export/`;
+export function exportCitationsUrl(clientSlug: string) {
+  return `${API_URL}/clients/${clientSlug}/citations/export/`;
 }
 
-export function triggerCitationCheck(clientId: number) {
-  return request<{ message: string }>(`/clients/${clientId}/citations/check/`, { method: "POST" });
+export function triggerCitationCheck(clientSlug: string) {
+  return request<{ message: string }>(`/clients/${clientSlug}/citations/check/`, { method: "POST" });
 }
 
 // --- Keywords ---
 
-export function fetchKeywords(clientId: number, params?: string) {
+export function fetchKeywords(clientSlug: string, params?: string) {
   const qs = params ? `?${params}` : "";
   return request<PaginatedResponse<Keyword>>(
-    `/clients/${clientId}/keywords/${qs}`
+    `/clients/${clientSlug}/keywords/${qs}`
   );
 }
 
-export function createKeyword(clientId: number, data: Partial<Keyword>) {
-  return request<Keyword>(`/clients/${clientId}/keywords/`, {
+export function createKeyword(clientSlug: string, data: Partial<Keyword>) {
+  return request<Keyword>(`/clients/${clientSlug}/keywords/`, {
     method: "POST",
     body: JSON.stringify(data),
   });
 }
 
 export function updateKeyword(
-  clientId: number,
+  clientSlug: string,
   keywordId: number,
   data: Partial<Keyword>
 ) {
-  return request<Keyword>(`/clients/${clientId}/keywords/${keywordId}/`, {
+  return request<Keyword>(`/clients/${clientSlug}/keywords/${keywordId}/`, {
     method: "PATCH",
     body: JSON.stringify(data),
   });
 }
 
-export function deleteKeyword(clientId: number, keywordId: number) {
-  return request<void>(`/clients/${clientId}/keywords/${keywordId}/`, {
+export function deleteKeyword(clientSlug: string, keywordId: number) {
+  return request<void>(`/clients/${clientSlug}/keywords/${keywordId}/`, {
     method: "DELETE",
   });
 }
 
 export function bulkUpdateKeywordStatus(
-  clientId: number,
+  clientSlug: string,
   keywordIds: number[],
   status: string
 ) {
   return request<{ updated: number }>(
-    `/clients/${clientId}/keywords/bulk-status/`,
+    `/clients/${clientSlug}/keywords/bulk-status/`,
     {
       method: "POST",
       body: JSON.stringify({ keyword_ids: keywordIds, status }),
@@ -168,34 +172,51 @@ export function bulkUpdateKeywordStatus(
 
 // --- Rankings ---
 
-export function fetchLatestRankings(clientId: number) {
-  return request<LatestRank[]>(`/clients/${clientId}/rankings/latest/`);
+export function fetchLatestRankings(clientSlug: string, compareDate?: string) {
+  const qs = compareDate ? `?compare_date=${compareDate}` : "";
+  return request<LatestRankingsResponse>(`/clients/${clientSlug}/rankings/latest/${qs}`);
 }
 
-export function fetchRankChanges(clientId: number) {
-  return request<LatestRank[]>(`/clients/${clientId}/rankings/changes/`);
+export interface LatestRankingsResponse {
+  summary: {
+    total_keywords: number;
+    desktop: RankTypeSummary;
+    mobile: RankTypeSummary;
+    local_pack: RankTypeSummary;
+  };
+  keywords: LatestRank[];
+  location: string;
 }
 
-export function fetchOrganicRankings(clientId: number, params?: string) {
+export function fetchRankChanges(clientSlug: string) {
+  return request<LatestRank[]>(`/clients/${clientSlug}/rankings/changes/`);
+}
+
+export function fetchOrganicRankings(clientSlug: string, params?: string) {
   const qs = params ? `?${params}` : "";
   return request<PaginatedResponse<SERPResult>>(
-    `/clients/${clientId}/rankings/organic/${qs}`
+    `/clients/${clientSlug}/rankings/organic/${qs}`
   );
 }
 
-export function fetchMapsRankings(clientId: number, params?: string) {
+export function fetchMapsRankings(clientSlug: string, params?: string) {
   const qs = params ? `?${params}` : "";
   return request<PaginatedResponse<MapsRankResult>>(
-    `/clients/${clientId}/rankings/maps/${qs}`
+    `/clients/${clientSlug}/rankings/maps/${qs}`
   );
 }
 
-export function fetchCheckDates(clientId: number) {
-  return request<{ dates: string[] }>(`/clients/${clientId}/rankings/dates/`);
+export interface CheckDate {
+  date: string;
+  keywords_checked: number;
+}
+
+export function fetchCheckDates(clientSlug: string) {
+  return request<{ dates: CheckDate[] }>(`/clients/${clientSlug}/rankings/dates/`);
 }
 
 export function fetchRankComparison(
-  clientId: number,
+  clientSlug: string,
   dateCurrent: string,
   datePrevious: string,
   maxRank?: number
@@ -203,32 +224,32 @@ export function fetchRankComparison(
   let qs = `?date_current=${dateCurrent}&date_previous=${datePrevious}`;
   if (maxRank) qs += `&max_rank=${maxRank}`;
   return request<RankComparisonResponse>(
-    `/clients/${clientId}/rankings/compare/${qs}`
+    `/clients/${clientSlug}/rankings/compare/${qs}`
   );
 }
 
 // --- Discovery ---
 
-export function fetchDiscoveryRuns(clientId: number) {
+export function fetchDiscoveryRuns(clientSlug: string) {
   return request<PaginatedResponse<DiscoveryRun>>(
-    `/clients/${clientId}/discovery/runs/`
+    `/clients/${clientSlug}/discovery/runs/`
   );
 }
 
 export function fetchDiscoveryResults(
-  clientId: number,
+  clientSlug: string,
   runId: number,
   params?: string
 ) {
   const qs = params ? `?${params}` : "";
   return request<PaginatedResponse<DiscoveryResult>>(
-    `/clients/${clientId}/discovery/runs/${runId}/results/${qs}`
+    `/clients/${clientSlug}/discovery/runs/${runId}/results/${qs}`
   );
 }
 
-export function promoteKeywords(clientId: number, keywordTexts: string[]) {
+export function promoteKeywords(clientSlug: string, keywordTexts: string[]) {
   return request<{ created: number; total: number }>(
-    `/clients/${clientId}/discovery/promote/`,
+    `/clients/${clientSlug}/discovery/promote/`,
     {
       method: "POST",
       body: JSON.stringify({ keyword_texts: keywordTexts }),
@@ -238,161 +259,161 @@ export function promoteKeywords(clientId: number, keywordTexts: string[]) {
 
 // --- Plans ---
 
-export function fetchPlans(clientId: number) {
-  return request<PaginatedResponse<QuarterlyPlanSummary>>(`/clients/${clientId}/plans/`);
+export function fetchPlans(clientSlug: string) {
+  return request<PaginatedResponse<QuarterlyPlanSummary>>(`/clients/${clientSlug}/plans/`);
 }
 
-export function fetchPlan(clientId: number, planId: number) {
-  return request<QuarterlyPlanDetail>(`/clients/${clientId}/plans/${planId}/`);
+export function fetchPlan(clientSlug: string, planId: number) {
+  return request<QuarterlyPlanDetail>(`/clients/${clientSlug}/plans/${planId}/`);
 }
 
-export function createPlan(clientId: number, data: Partial<QuarterlyPlanDetail>) {
-  return request<QuarterlyPlanDetail>(`/clients/${clientId}/plans/`, {
+export function createPlan(clientSlug: string, data: Partial<QuarterlyPlanDetail>) {
+  return request<QuarterlyPlanDetail>(`/clients/${clientSlug}/plans/`, {
     method: "POST",
     body: JSON.stringify(data),
   });
 }
 
-export function updatePlan(clientId: number, planId: number, data: Partial<QuarterlyPlanDetail>) {
-  return request<QuarterlyPlanDetail>(`/clients/${clientId}/plans/${planId}/`, {
+export function updatePlan(clientSlug: string, planId: number, data: Partial<QuarterlyPlanDetail>) {
+  return request<QuarterlyPlanDetail>(`/clients/${clientSlug}/plans/${planId}/`, {
     method: "PATCH",
     body: JSON.stringify(data),
   });
 }
 
-export function deletePlan(clientId: number, planId: number) {
-  return request<void>(`/clients/${clientId}/plans/${planId}/`, { method: "DELETE" });
+export function deletePlan(clientSlug: string, planId: number) {
+  return request<void>(`/clients/${clientSlug}/plans/${planId}/`, { method: "DELETE" });
 }
 
-export function createPlanItem(clientId: number, planId: number, data: Partial<PlanItem>) {
-  return request<PlanItem>(`/clients/${clientId}/plans/${planId}/items/`, {
+export function createPlanItem(clientSlug: string, planId: number, data: Partial<PlanItem>) {
+  return request<PlanItem>(`/clients/${clientSlug}/plans/${planId}/items/`, {
     method: "POST",
     body: JSON.stringify(data),
   });
 }
 
-export function updatePlanItem(clientId: number, planId: number, itemId: number, data: Partial<PlanItem>) {
-  return request<PlanItem>(`/clients/${clientId}/plans/${planId}/items/${itemId}/`, {
+export function updatePlanItem(clientSlug: string, planId: number, itemId: number, data: Partial<PlanItem>) {
+  return request<PlanItem>(`/clients/${clientSlug}/plans/${planId}/items/${itemId}/`, {
     method: "PATCH",
     body: JSON.stringify(data),
   });
 }
 
-export function deletePlanItem(clientId: number, planId: number, itemId: number) {
-  return request<void>(`/clients/${clientId}/plans/${planId}/items/${itemId}/`, { method: "DELETE" });
+export function deletePlanItem(clientSlug: string, planId: number, itemId: number) {
+  return request<void>(`/clients/${clientSlug}/plans/${planId}/items/${itemId}/`, { method: "DELETE" });
 }
 
-export function createDeliverable(clientId: number, planId: number, itemId: number, data: Partial<DeliverableData>) {
-  return request<DeliverableData>(`/clients/${clientId}/plans/${planId}/items/${itemId}/deliverables/`, {
+export function createDeliverable(clientSlug: string, planId: number, itemId: number, data: Partial<DeliverableData>) {
+  return request<DeliverableData>(`/clients/${clientSlug}/plans/${planId}/items/${itemId}/deliverables/`, {
     method: "POST",
     body: JSON.stringify(data),
   });
 }
 
-export function updateDeliverable(clientId: number, planId: number, itemId: number, deliverableId: number, data: Partial<DeliverableData>) {
-  return request<DeliverableData>(`/clients/${clientId}/plans/${planId}/items/${itemId}/deliverables/${deliverableId}/`, {
+export function updateDeliverable(clientSlug: string, planId: number, itemId: number, deliverableId: number, data: Partial<DeliverableData>) {
+  return request<DeliverableData>(`/clients/${clientSlug}/plans/${planId}/items/${itemId}/deliverables/${deliverableId}/`, {
     method: "PATCH",
     body: JSON.stringify(data),
   });
 }
 
-export function deleteDeliverable(clientId: number, planId: number, itemId: number, deliverableId: number) {
-  return request<void>(`/clients/${clientId}/plans/${planId}/items/${itemId}/deliverables/${deliverableId}/`, { method: "DELETE" });
+export function deleteDeliverable(clientSlug: string, planId: number, itemId: number, deliverableId: number) {
+  return request<void>(`/clients/${clientSlug}/plans/${planId}/items/${itemId}/deliverables/${deliverableId}/`, { method: "DELETE" });
 }
 
 // --- Pages ---
 
-export function fetchPages(clientId: number) {
-  return request<PagesResponse>(`/clients/${clientId}/pages/`);
+export function fetchPages(clientSlug: string) {
+  return request<PagesResponse>(`/clients/${clientSlug}/pages/`);
 }
 
 // --- GBP ---
 
-export function fetchGBPPerformance(clientId: number, params?: string) {
+export function fetchGBPPerformance(clientSlug: string, params?: string) {
   const qs = params ? `?${params}` : "";
   return request<PaginatedResponse<GBPPerformanceMetric>>(
-    `/clients/${clientId}/gbp/performance/${qs}`
+    `/clients/${clientSlug}/gbp/performance/${qs}`
   );
 }
 
-export function fetchGBPCalls(clientId: number, params?: string) {
+export function fetchGBPCalls(clientSlug: string, params?: string) {
   const qs = params ? `?${params}` : "";
   return request<PaginatedResponse<GBPCallMetric>>(
-    `/clients/${clientId}/gbp/calls/${qs}`
+    `/clients/${clientSlug}/gbp/calls/${qs}`
   );
 }
 
-export function fetchGBPReviews(clientId: number, params?: string) {
+export function fetchGBPReviews(clientSlug: string, params?: string) {
   const qs = params ? `?${params}` : "";
   return request<PaginatedResponse<GBPReviewSnapshot>>(
-    `/clients/${clientId}/gbp/reviews/${qs}`
+    `/clients/${clientSlug}/gbp/reviews/${qs}`
   );
 }
 
-export function fetchGBPSearchKeywords(clientId: number, params?: string) {
+export function fetchGBPSearchKeywords(clientSlug: string, params?: string) {
   const qs = params ? `?${params}` : "";
   return request<PaginatedResponse<GBPSearchKeyword>>(
-    `/clients/${clientId}/gbp/search-keywords/${qs}`
+    `/clients/${clientSlug}/gbp/search-keywords/${qs}`
   );
 }
 
 // --- Analytics ---
 
-export function fetchGA4Traffic(clientId: number, params?: string) {
+export function fetchGA4Traffic(clientSlug: string, params?: string) {
   const qs = params ? `?${params}` : "";
   return request<PaginatedResponse<GA4TrafficSnapshot>>(
-    `/clients/${clientId}/analytics/traffic/${qs}`
+    `/clients/${clientSlug}/analytics/traffic/${qs}`
   );
 }
 
-export function fetchGA4LandingPages(clientId: number, params?: string) {
+export function fetchGA4LandingPages(clientSlug: string, params?: string) {
   const qs = params ? `?${params}` : "";
   return request<PaginatedResponse<GA4LandingPage>>(
-    `/clients/${clientId}/analytics/landing-pages/${qs}`
+    `/clients/${clientSlug}/analytics/landing-pages/${qs}`
   );
 }
 
-export function fetchGA4Events(clientId: number, params?: string) {
+export function fetchGA4Events(clientSlug: string, params?: string) {
   const qs = params ? `?${params}` : "";
   return request<PaginatedResponse<GA4Event>>(
-    `/clients/${clientId}/analytics/events/${qs}`
+    `/clients/${clientSlug}/analytics/events/${qs}`
   );
 }
 
-export function fetchGA4Conversions(clientId: number, params?: string) {
+export function fetchGA4Conversions(clientSlug: string, params?: string) {
   const qs = params ? `?${params}` : "";
   return request<PaginatedResponse<GA4ConversionSummary>>(
-    `/clients/${clientId}/analytics/conversions/${qs}`
+    `/clients/${clientSlug}/analytics/conversions/${qs}`
   );
 }
 
 // --- Citations ---
 
-export function fetchCitationSummary(clientId: number) {
-  return request<CitationSummaryResponse>(`/clients/${clientId}/citations/summary/`);
+export function fetchCitationSummary(clientSlug: string) {
+  return request<CitationSummaryResponse>(`/clients/${clientSlug}/citations/summary/`);
 }
 
-export function fetchCitations(clientId: number, params?: string) {
+export function fetchCitations(clientSlug: string, params?: string) {
   const qs = params ? `?${params}` : "";
-  return request<PaginatedResponse<CitationData>>(`/clients/${clientId}/citations/${qs}`);
+  return request<PaginatedResponse<CitationData>>(`/clients/${clientSlug}/citations/${qs}`);
 }
 
-export function createCitation(clientId: number, data: Partial<CitationData>) {
-  return request<CitationData>(`/clients/${clientId}/citations/`, {
+export function createCitation(clientSlug: string, data: Partial<CitationData>) {
+  return request<CitationData>(`/clients/${clientSlug}/citations/`, {
     method: "POST",
-    body: JSON.stringify({ ...data, client: clientId }),
+    body: JSON.stringify(data),
   });
 }
 
-export function updateCitation(clientId: number, citationId: number, data: Partial<CitationData>) {
-  return request<CitationData>(`/clients/${clientId}/citations/${citationId}/`, {
+export function updateCitation(clientSlug: string, citationId: number, data: Partial<CitationData>) {
+  return request<CitationData>(`/clients/${clientSlug}/citations/${citationId}/`, {
     method: "PATCH",
     body: JSON.stringify(data),
   });
 }
 
-export function deleteCitation(clientId: number, citationId: number) {
-  return request<void>(`/clients/${clientId}/citations/${citationId}/`, { method: "DELETE" });
+export function deleteCitation(clientSlug: string, citationId: number) {
+  return request<void>(`/clients/${clientSlug}/citations/${citationId}/`, { method: "DELETE" });
 }
 
 export function fetchCitationDirectories() {
@@ -401,59 +422,78 @@ export function fetchCitationDirectories() {
 
 // --- Backlinks ---
 
-export function fetchBacklinkSummary(clientId: number) {
-  return request<BacklinkSummaryData>(`/clients/${clientId}/backlinks/summary/`);
+export function fetchBacklinkSummary(clientSlug: string) {
+  return request<BacklinkSummaryData>(`/clients/${clientSlug}/backlinks/summary/`);
 }
 
-export function fetchBacklinks(clientId: number, params?: string) {
+export function fetchBacklinks(clientSlug: string, params?: string) {
   const qs = params ? `?${params}` : "";
-  return request<PaginatedResponse<BacklinkData>>(`/clients/${clientId}/backlinks/links/${qs}`);
+  return request<PaginatedResponse<BacklinkData>>(`/clients/${clientSlug}/backlinks/links/${qs}`);
 }
 
-export function fetchReferringDomains(clientId: number, params?: string) {
+export function fetchReferringDomains(clientSlug: string, params?: string) {
   const qs = params ? `?${params}` : "";
-  return request<PaginatedResponse<ReferringDomainData>>(`/clients/${clientId}/backlinks/referring-domains/${qs}`);
+  return request<PaginatedResponse<ReferringDomainData>>(`/clients/${clientSlug}/backlinks/referring-domains/${qs}`);
 }
 
-export function fetchAnchors(clientId: number, params?: string) {
+export function fetchAnchors(clientSlug: string, params?: string) {
   const qs = params ? `?${params}` : "";
-  return request<PaginatedResponse<AnchorData>>(`/clients/${clientId}/backlinks/anchors/${qs}`);
+  return request<PaginatedResponse<AnchorData>>(`/clients/${clientSlug}/backlinks/anchors/${qs}`);
 }
 
 // --- Competitors ---
 
-export function fetchCompetitors(clientId: number) {
-  return request<PaginatedResponse<CompetitorData>>(`/clients/${clientId}/competitors/`);
+export function fetchCompetitors(clientSlug: string) {
+  return request<PaginatedResponse<CompetitorData>>(`/clients/${clientSlug}/competitors/`);
 }
 
-export function createCompetitor(clientId: number, data: { domain: string; name?: string }) {
-  return request<CompetitorData>(`/clients/${clientId}/competitors/`, {
+export function createCompetitor(clientSlug: string, data: { domain: string; name?: string }) {
+  return request<CompetitorData>(`/clients/${clientSlug}/competitors/`, {
     method: "POST",
-    body: JSON.stringify({ ...data, client: clientId }),
+    body: JSON.stringify(data),
   });
 }
 
-export function deleteCompetitor(clientId: number, competitorId: number) {
-  return request<void>(`/clients/${clientId}/competitors/${competitorId}/`, { method: "DELETE" });
+export function deleteCompetitor(clientSlug: string, competitorId: number) {
+  return request<void>(`/clients/${clientSlug}/competitors/${competitorId}/`, { method: "DELETE" });
+}
+
+export interface CompetitorRankingsResponse {
+  date_current: string;
+  date_previous: string | null;
+  competitors: { id: number; domain: string; name: string }[];
+  keywords: {
+    keyword_id: number;
+    keyword_text: string;
+    search_volume: number | null;
+    client_rank: number | null;
+    competitors: Record<number, { rank: number | null; change: number | null }>;
+  }[];
+}
+
+export function fetchCompetitorRankings(clientSlug: string, dateCurrent: string, datePrevious?: string) {
+  let qs = `?date_current=${dateCurrent}`;
+  if (datePrevious) qs += `&date_previous=${datePrevious}`;
+  return request<CompetitorRankingsResponse>(`/clients/${clientSlug}/rankings/competitors/${qs}`);
 }
 
 // --- Site Audit ---
 
-export function fetchSiteAudits(clientId: number) {
-  return request<PaginatedResponse<SiteAuditData>>(`/clients/${clientId}/audits/`);
+export function fetchSiteAudits(clientSlug: string) {
+  return request<PaginatedResponse<SiteAuditData>>(`/clients/${clientSlug}/audits/`);
 }
 
-export function fetchSiteAudit(clientId: number, auditId: number) {
-  return request<SiteAuditData>(`/clients/${clientId}/audits/${auditId}/`);
+export function fetchSiteAudit(clientSlug: string, auditId: number) {
+  return request<SiteAuditData>(`/clients/${clientSlug}/audits/${auditId}/`);
 }
 
-export function fetchAuditPages(clientId: number, auditId: number, params?: string) {
+export function fetchAuditPages(clientSlug: string, auditId: number, params?: string) {
   const qs = params ? `?${params}` : "";
-  return request<PaginatedResponse<AuditPageData>>(`/clients/${clientId}/audits/${auditId}/pages/${qs}`);
+  return request<PaginatedResponse<AuditPageData>>(`/clients/${clientSlug}/audits/${auditId}/pages/${qs}`);
 }
 
-export function fetchLighthouseResults(clientId: number) {
-  return request<PaginatedResponse<LighthouseData>>(`/clients/${clientId}/lighthouse/`);
+export function fetchLighthouseResults(clientSlug: string) {
+  return request<PaginatedResponse<LighthouseData>>(`/clients/${clientSlug}/lighthouse/`);
 }
 
 // --- Types ---
@@ -469,6 +509,7 @@ export interface CompetitorData {
 
 export interface Client {
   id: number;
+  slug: string;
   name: string;
   domain: string;
   website_url: string;
@@ -481,6 +522,7 @@ export interface Client {
   zip_code: string;
   is_active: boolean;
   track_organic: boolean;
+  track_mobile: boolean;
   track_maps: boolean;
   discovery_enabled: boolean;
   tracked_keywords_count: number;
@@ -494,16 +536,76 @@ export interface Client {
   updated_at: string;
 }
 
+export interface RankingSummary {
+  found: number;
+  not_found: number;
+  avg_rank: number | null;
+  improved: number;
+  declined: number;
+  in_top_3?: number;
+  in_top_10?: number;
+  in_top_20?: number;
+  in_top_50?: number;
+  coverage_pct?: number;
+  history: { date: string; avg_rank: number }[];
+}
+
 export interface ClientSummary {
   client: Client;
   total_tracked_keywords: number;
   total_discovered_keywords: number;
-  keywords_in_top_3: number;
-  keywords_in_top_10: number;
-  keywords_improved: number;
-  keywords_declined: number;
   last_discovery_run: string | null;
   last_rank_check: string | null;
+  rankings: {
+    desktop: RankingSummary;
+    mobile: RankingSummary;
+    local_pack: RankingSummary;
+    local_finder: RankingSummary;
+  };
+  reviews: {
+    total_reviews: number;
+    average_rating: number | null;
+    new_reviews_since_last: number;
+    response_rate: number | null;
+    five_star: number;
+    four_star: number;
+    three_star: number;
+    two_star: number;
+    one_star: number;
+  } | null;
+  gbp_totals: {
+    impressions: number;
+    interactions: number;
+    call_clicks: number;
+    website_clicks: number;
+    direction_requests: number;
+  };
+  ga4_traffic_history: {
+    date: string;
+    organic_sessions: number;
+    organic_users: number;
+  }[];
+  ga4_totals: {
+    sessions: number;
+    users: number;
+    total_sessions: number;
+  };
+  ga4_conversions: {
+    total: number;
+    organic: number;
+  };
+  citations: {
+    total: number;
+    found: number;
+    nap_errors: number;
+  };
+  active_plan: {
+    id: number;
+    name: string;
+    progress_pct: number;
+    total_items: number;
+    completed_items: number;
+  } | null;
 }
 
 export interface Keyword {
@@ -533,11 +635,20 @@ export interface Keyword {
 export interface LatestRank {
   keyword_id: number;
   keyword_text: string;
+  search_volume: number | null;
+  keyword_difficulty: number | null;
   organic_rank: number | null;
   organic_url: string;
   organic_rank_change: number | null;
+  organic_serp_url: string;
+  organic_screenshot_url: string;
+  mobile_rank: number | null;
+  mobile_url: string;
+  mobile_rank_change: number | null;
+  mobile_serp_url: string;
   maps_rank: number | null;
   maps_rank_change: number | null;
+  maps_serp_url: string;
   last_checked: string | null;
 }
 
@@ -736,6 +847,9 @@ export interface RankComparisonKeyword {
   organic_serp_features: Record<string, boolean>;
   organic_mobile_rank: number | null;
   organic_mobile_change: number | null;
+  organic_mobile_url: string;
+  organic_mobile_serp_url: string;
+  organic_mobile_screenshot_url: string;
   local_pack_rank: number | null;
   local_pack_change: number | null;
   local_pack_serp_url: string;

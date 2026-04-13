@@ -139,8 +139,8 @@ function SummaryCard({
 /* ------------------------------------------------------------------ */
 
 export default function AnalyticsPage() {
-  const { id } = useParams<{ id: string }>();
-  const clientId = Number(id);
+  const { slug } = useParams<{ slug: string }>();
+  const clientSlug = slug;
 
   const [period, setPeriod] = useState<Period>("30d");
   const [traffic, setTraffic] = useState<GA4TrafficSnapshot[]>([]);
@@ -159,10 +159,10 @@ export default function AnalyticsPage() {
     setLoading(true);
     try {
       const [t, e, c, lp] = await Promise.all([
-        fetchAllPages<GA4TrafficSnapshot>((p) => fetchGA4Traffic(clientId, p), qs),
-        fetchAllPages<GA4Event>((p) => fetchGA4Events(clientId, p), qs),
-        fetchAllPages<GA4ConversionSummary>((p) => fetchGA4Conversions(clientId, p), qs),
-        fetchAllPages<GA4LandingPage>((p) => fetchGA4LandingPages(clientId, p), qs),
+        fetchAllPages<GA4TrafficSnapshot>((p) => fetchGA4Traffic(clientSlug, p), qs),
+        fetchAllPages<GA4Event>((p) => fetchGA4Events(clientSlug, p), qs),
+        fetchAllPages<GA4ConversionSummary>((p) => fetchGA4Conversions(clientSlug, p), qs),
+        fetchAllPages<GA4LandingPage>((p) => fetchGA4LandingPages(clientSlug, p), qs),
       ]);
       setTraffic(t.sort((a, b) => a.date.localeCompare(b.date)));
       setEvents(e.sort((a, b) => a.date.localeCompare(b.date)));
@@ -171,7 +171,7 @@ export default function AnalyticsPage() {
     } finally {
       setLoading(false);
     }
-  }, [clientId, qs]);
+  }, [clientSlug, qs]);
 
   useEffect(() => {
     load();

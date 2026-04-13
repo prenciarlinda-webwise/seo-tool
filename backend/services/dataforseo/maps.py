@@ -66,6 +66,7 @@ class MapsService:
             "category": "",
             "work_hours": None,
             "is_claimed": None,
+            "check_url": "",
             "top_competitors": [],
         }
 
@@ -73,7 +74,9 @@ class MapsService:
         if not result_data:
             return result
 
-        items = result_data[0].get("items", [])
+        serp_data = result_data[0]
+        result["check_url"] = serp_data.get("check_url", "")
+        items = serp_data.get("items", [])
         domain_clean = domain.lower().replace("www.", "") if domain else ""
         business_name_lower = business_name.lower() if business_name else ""
 
@@ -96,15 +99,15 @@ class MapsService:
                 result["is_found"] = True
                 result["rank_group"] = item.get("rank_group")
                 result["rank_absolute"] = item.get("rank_absolute")
-                result["title"] = item.get("title", "")
-                result["domain"] = item.get("domain", "")
-                result["url"] = item.get("url", "")
-                result["phone"] = item.get("phone", "")
-                result["address"] = item.get("address", "")
-                result["place_id"] = item.get("place_id", "")
-                result["cid"] = item.get("cid", "")
-                result["feature_id"] = item.get("feature_id", "")
-                result["category"] = item.get("category", "")
+                result["title"] = item.get("title") or ""
+                result["domain"] = item.get("domain") or ""
+                result["url"] = item.get("url") or ""
+                result["phone"] = item.get("phone") or ""
+                result["address"] = item.get("address") or ""
+                result["place_id"] = item.get("place_id") or ""
+                result["cid"] = item.get("cid") or ""
+                result["feature_id"] = item.get("feature_id") or ""
+                result["category"] = item.get("category") or ""
                 result["work_hours"] = item.get("work_hours")
                 result["is_claimed"] = item.get("is_claimed")
 

@@ -30,6 +30,7 @@ import {
   ChevronDown,
   ChevronUp,
   Search,
+  Navigation,
 } from "lucide-react";
 import {
   AreaChart,
@@ -47,24 +48,50 @@ import {
 } from "recharts";
 
 type Tab = "performance" | "calls" | "reviews" | "keywords";
-type Period = "7d" | "30d" | "3m" | "6m";
 
-const PERIODS: { key: Period; label: string; days: number }[] = [
-  { key: "7d", label: "7 days", days: 7 },
-  { key: "30d", label: "30 days", days: 30 },
-  { key: "3m", label: "3 months", days: 90 },
-  { key: "6m", label: "6 months", days: 180 },
-];
+/* ── Period helpers ─────────────────────────────────────────── */
 
-function getDateRange(period: Period): { date_from: string; date_to: string } {
+interface PeriodOption {
+  key: string;
+  label: string;
+  date_from: string;
+  date_to: string;
+}
+
+function buildPresets(): PeriodOption[] {
   const now = new Date();
-  const days = PERIODS.find((p) => p.key === period)!.days;
-  const from = new Date(now);
-  from.setDate(from.getDate() - days);
-  return {
-    date_from: from.toISOString().split("T")[0],
-    date_to: now.toISOString().split("T")[0],
+  const to = now.toISOString().split("T")[0];
+  const ago = (days: number) => {
+    const d = new Date(now);
+    d.setDate(d.getDate() - days);
+    return d.toISOString().split("T")[0];
   };
+  return [
+    { key: "7d", label: "7 days", date_from: ago(7), date_to: to },
+    { key: "30d", label: "30 days", date_from: ago(30), date_to: to },
+    { key: "3m", label: "3 months", date_from: ago(90), date_to: to },
+    { key: "6m", label: "6 months", date_from: ago(180), date_to: to },
+  ];
+}
+
+function buildMonthOptions(): PeriodOption[] {
+  const now = new Date();
+  const months: PeriodOption[] = [];
+  for (let i = 5; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const year = d.getFullYear();
+    const month = d.getMonth();
+    const lastDay = new Date(year, month + 1, 0).getDate();
+    const label = d.toLocaleDateString("en-US", { month: "short", year: "numeric" });
+    const pad = (n: number) => String(n).padStart(2, "0");
+    months.push({
+      key: `m-${year}-${pad(month + 1)}`,
+      label,
+      date_from: `${year}-${pad(month + 1)}-01`,
+      date_to: `${year}-${pad(month + 1)}-${pad(lastDay)}`,
+    });
+  }
+  return months;
 }
 
 function formatDate(dateStr: string): string {
@@ -143,34 +170,46 @@ const tooltipStyle = {
 };
 
 export default function GBPPage() {
-  const { id } = useParams<{ id: string }>();
-  const clientId = Number(id);
+  const { slug } = useParams<{ slug: string }>();
+  const clientSlug = slug;
+
+  const presets = useMemo(buildPresets, []);
+  const monthOptions = useMemo(buildMonthOptions, []);
 
   const [tab, setTab] = useState<Tab>("performance");
-  const [period, setPeriod] = useState<Period>("30d");
+  const [selectedPeriod, setSelectedPeriod] = useState<string>("30d");
   const [performance, setPerformance] = useState<GBPPerformanceMetric[]>([]);
   const [calls, setCalls] = useState<GBPCallMetric[]>([]);
   const [reviews, setReviews] = useState<GBPReviewSnapshot[]>([]);
   const [keywords, setKeywords] = useState<GBPSearchKeyword[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // Resolve the active date range from the selected period key
+  const dateRange = useMemo(() => {
+    const all = [...presets, ...monthOptions];
+    return all.find((p) => p.key === selectedPeriod) || presets[1]; // default 30d
+  }, [selectedPeriod, presets, monthOptions]);
+
   useEffect(() => {
     setLoading(true);
-    const { date_from, date_to } = getDateRange(period);
-    const qs = `date_from=${date_from}&date_to=${date_to}`;
+    const { date_from, date_to } = dateRange;
+    // Request up to 365 records so all daily data fits in one page
+    const qs = `date_from=${date_from}&date_to=${date_to}&page_size=365`;
 
     const fetchers: Record<Tab, () => Promise<void>> = {
       performance: () =>
-        fetchGBPPerformance(clientId, qs).then((r) => setPerformance(r.results)),
+        fetchGBPPerformance(clientSlug, qs).then((r) => setPerformance(r.results)),
       calls: () =>
-        fetchGBPCalls(clientId, qs).then((r) => setCalls(r.results)),
+        fetchGBPCalls(clientSlug, qs).then((r) => setCalls(r.results)),
       reviews: () =>
-        fetchGBPReviews(clientId, qs).then((r) => setReviews(r.results)),
+        fetchGBPReviews(clientSlug, qs).then((r) => setReviews(r.results)),
       keywords: () =>
-        fetchGBPSearchKeywords(clientId, qs).then((r) => setKeywords(r.results)),
+        fetchGBPSearchKeywords(clientSlug, `page_size=365`).then((r) =>
+          setKeywords(r.results)
+        ),
     };
     fetchers[tab]().finally(() => setLoading(false));
-  }, [clientId, tab, period]);
+  }, [clientSlug, tab, dateRange]);
 
   // ---------- Performance aggregations ----------
   const perfSummary = useMemo(() => {
@@ -480,20 +519,35 @@ export default function GBPPage() {
       </h1>
 
       {/* Period Filter Bar */}
-      <div className="flex items-center gap-2 mb-6">
+      <div className="flex flex-wrap items-center gap-2 mb-4">
         <span className="text-sm font-medium text-gray-500 mr-1">Period:</span>
-        {PERIODS.map((p) => (
+        {presets.map((p) => (
           <button
             key={p.key}
-            onClick={() => setPeriod(p.key)}
+            onClick={() => setSelectedPeriod(p.key)}
             className={cn(
               "px-3 py-1.5 text-sm font-medium rounded-md transition-colors border",
-              period === p.key
+              selectedPeriod === p.key
                 ? "bg-blue-50 text-blue-700 border-blue-200"
                 : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50"
             )}
           >
             {p.label}
+          </button>
+        ))}
+        <span className="text-gray-300 mx-1">|</span>
+        {monthOptions.map((m) => (
+          <button
+            key={m.key}
+            onClick={() => setSelectedPeriod(m.key)}
+            className={cn(
+              "px-3 py-1.5 text-sm font-medium rounded-md transition-colors border",
+              selectedPeriod === m.key
+                ? "bg-indigo-50 text-indigo-700 border-indigo-200"
+                : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50"
+            )}
+          >
+            {m.label}
           </button>
         ))}
       </div>
@@ -549,7 +603,7 @@ export default function GBPPage() {
                 <StatCard
                   label="Direction Requests"
                   value={formatNumber(perfSummary.directionRequests)}
-                  icon={<MapPin className="h-4 w-4" />}
+                  icon={<Navigation className="h-4 w-4" />}
                 />
               </div>
 
@@ -568,8 +622,9 @@ export default function GBPPage() {
                         />
                         <XAxis
                           dataKey="date"
-                          tick={{ fontSize: 12 }}
+                          tick={{ fontSize: 11 }}
                           tickLine={false}
+                          interval={Math.max(0, Math.floor(perfChartData.length / 12) - 1)}
                         />
                         <YAxis tick={{ fontSize: 12 }} tickLine={false} />
                         <Tooltip
@@ -605,8 +660,9 @@ export default function GBPPage() {
                         />
                         <XAxis
                           dataKey="date"
-                          tick={{ fontSize: 12 }}
+                          tick={{ fontSize: 11 }}
                           tickLine={false}
+                          interval={Math.max(0, Math.floor(perfChartData.length / 12) - 1)}
                         />
                         <YAxis tick={{ fontSize: 12 }} tickLine={false} />
                         <Tooltip
@@ -625,17 +681,17 @@ export default function GBPPage() {
                           radius={[0, 0, 0, 0]}
                         />
                         <Bar
-                          dataKey="website_clicks"
-                          stackId="interactions"
-                          fill="#10b981"
-                          name="Website Clicks"
-                          radius={[0, 0, 0, 0]}
-                        />
-                        <Bar
                           dataKey="direction_requests"
                           stackId="interactions"
                           fill="#f59e0b"
                           name="Direction Requests"
+                          radius={[0, 0, 0, 0]}
+                        />
+                        <Bar
+                          dataKey="website_clicks"
+                          stackId="interactions"
+                          fill="#10b981"
+                          name="Website Clicks"
                           radius={[2, 2, 0, 0]}
                         />
                       </BarChart>
@@ -691,10 +747,11 @@ export default function GBPPage() {
                       />
                       <XAxis
                         dataKey="date"
-                        tick={{ fontSize: 12 }}
+                        tick={{ fontSize: 11 }}
                         tickLine={false}
+                        interval={Math.max(0, Math.floor(callsChartData.length / 12) - 1)}
                       />
-                      <YAxis tick={{ fontSize: 12 }} tickLine={false} />
+                      <YAxis tick={{ fontSize: 12 }} tickLine={false} allowDecimals={false} />
                       <Tooltip
                         {...tooltipStyle}
                         formatter={(value: any, name: any) => [
@@ -792,6 +849,12 @@ export default function GBPPage() {
                     />
                   </div>
                 </>
+              )}
+
+              {!reviewSummary && (
+                <div className="text-center py-12 text-gray-400 text-sm">
+                  No review data for this period.
+                </div>
               )}
 
               {reviewChartData.length > 1 && (

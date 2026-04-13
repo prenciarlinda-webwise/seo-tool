@@ -66,7 +66,7 @@ function ClientActions({
   }, [open]);
 
   async function handleToggleActive() {
-    await updateClient(client.id, { is_active: !client.is_active });
+    await updateClient(client.slug, { is_active: !client.is_active });
     setOpen(false);
     onUpdate();
   }
@@ -76,7 +76,7 @@ function ClientActions({
       setConfirming(true);
       return;
     }
-    await deleteClient(client.id);
+    await deleteClient(client.slug);
     setOpen(false);
     setConfirming(false);
     onUpdate();
@@ -98,14 +98,14 @@ function ClientActions({
       {open && (
         <div className="absolute right-0 top-full mt-1 w-44 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
           <Link
-            href={`/clients/${client.id}`}
+            href={`/clients/${client.slug}`}
             className="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
           >
             <ChevronRight className="h-3.5 w-3.5" />
             View Dashboard
           </Link>
           <Link
-            href={`/clients/new?edit=${client.id}`}
+            href={`/clients/new?edit=${client.slug}`}
             className="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
           >
             <Edit className="h-3.5 w-3.5" />
@@ -272,7 +272,7 @@ export default function ClientsPage() {
           filtered.map((client) => (
             <div
               key={client.id}
-              onClick={() => router.push(`/clients/${client.id}`)}
+              onClick={() => router.push(`/clients/${client.slug}`)}
               className="block bg-white rounded-lg border border-gray-200 hover:border-blue-300 hover:shadow-md transition-all group cursor-pointer"
             >
               <div className="grid grid-cols-1 md:grid-cols-[1fr_100px_100px_100px_110px_110px_40px] gap-4 items-center px-5 py-4">

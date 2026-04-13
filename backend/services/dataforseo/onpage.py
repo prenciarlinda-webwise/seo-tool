@@ -92,7 +92,7 @@ class OnPageService:
         Returns:
             Summary dict with crawl statistics.
         """
-        data = self.client.post(f"on_page/summary/{task_id}", [{}])
+        data = self.client.get(f"on_page/summary/{task_id}")
         return self._parse_first_result(data)
 
     # ------------------------------------------------------------------
@@ -184,6 +184,31 @@ class OnPageService:
         data = self.client.post("on_page/redirect_chains", [{"id": task_id}])
         items, total_count = self._parse_items(data)
         return {"items": items, "total_count": total_count}
+
+    # ------------------------------------------------------------------
+    # Instant page scrape
+    # ------------------------------------------------------------------
+
+    def get_instant_page(self, url: str) -> dict:
+        """Fetch a page instantly and return its content/meta.
+
+        Uses the DataForSEO On-Page Instant Pages endpoint to scrape
+        a single URL and return its HTML content, title, etc.
+
+        Args:
+            url: The page URL to scrape.
+
+        Returns:
+            Dict with page data (content, title, status_code, etc.),
+            or empty dict if not available.
+        """
+        task = {"url": url, "enable_javascript": False}
+        data = self.client.post("on_page/instant_pages", [task])
+        result = self._parse_first_result(data)
+        if not result:
+            return {}
+        items = result.get("items") or []
+        return items[0] if items else {}
 
     # ------------------------------------------------------------------
     # Lighthouse

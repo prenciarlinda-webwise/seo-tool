@@ -13,11 +13,19 @@ INTERESTING_MAX_RANK = 30
 
 
 @shared_task
-def monthly_keyword_discovery():
-    """Run DataForSEO Ranked Keywords for all discovery-enabled clients."""
+def monthly_keyword_discovery(client_id=None):
+    """Run DataForSEO Ranked Keywords for discovery-enabled clients.
+
+    Args:
+        client_id: Optional — if provided, only run for this client.
+                   Otherwise run for all active, discovery-enabled clients.
+    """
     from apps.clients.models import Client
 
     clients = Client.objects.filter(is_active=True, discovery_enabled=True)
+    if client_id:
+        clients = clients.filter(id=client_id)
+
     results_summary = []
 
     for client in clients:
@@ -57,9 +65,13 @@ def _discover_keywords_for_client(client):
     )
 
     try:
+        # Labs API only supports country-level locations (e.g. 2840 for US).
+        # City-level codes (1000000+) cause errors, so fall back to US.
+        labs_location = client.location_code if client.location_code < 100000 else 2840
+
         task_result = labs_service.get_ranked_keywords(
             target=client.domain,
-            location_code=client.location_code,
+            location_code=labs_location,
             language_code=client.language_code,
             limit=client.max_discovery_keywords,
         )

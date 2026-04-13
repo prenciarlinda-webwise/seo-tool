@@ -520,8 +520,8 @@ function EditableRow({
 /* ------------------------------------------------------------------ */
 
 export default function CitationsPage() {
-  const { id } = useParams<{ id: string }>();
-  const clientId = Number(id);
+  const { slug } = useParams<{ slug: string }>();
+  const clientSlug = slug;
 
   const [loading, setLoading] = useState(true);
   const [summary, setSummary] = useState<CitationSummaryResponse | null>(null);
@@ -535,8 +535,8 @@ export default function CitationsPage() {
   const reload = useCallback(async () => {
     try {
       const [s, c, d] = await Promise.all([
-        fetchCitationSummary(clientId),
-        fetchCitations(clientId),
+        fetchCitationSummary(clientSlug),
+        fetchCitations(clientSlug),
         fetchCitationDirectories(),
       ]);
       setSummary(s);
@@ -545,7 +545,7 @@ export default function CitationsPage() {
     } catch {
       /* ignore */
     }
-  }, [clientId]);
+  }, [clientSlug]);
 
   useEffect(() => {
     setLoading(true);
@@ -577,20 +577,20 @@ export default function CitationsPage() {
     // The backend handles directory by id, so for new directories we'd need a separate call
     // For simplicity, if new_directory_name is set, we skip (user should use existing)
     delete (payload as any).new_directory_name;
-    await createCitation(clientId, payload);
+    await createCitation(clientSlug, payload);
     setShowAddForm(false);
     await reload();
   }
 
   async function handleUpdateCitation(citationId: number, data: Partial<CitationData>) {
-    await updateCitation(clientId, citationId, data);
+    await updateCitation(clientSlug, citationId, data);
     setEditingId(null);
     await reload();
   }
 
   async function handleDeleteCitation(citationId: number) {
     if (!confirm("Delete this citation?")) return;
-    await deleteCitation(clientId, citationId);
+    await deleteCitation(clientSlug, citationId);
     await reload();
   }
 
@@ -601,7 +601,7 @@ export default function CitationsPage() {
     const current = citation[field];
     // Cycle: null -> true -> false -> null
     const next = current === null ? true : current === true ? false : null;
-    await updateCitation(clientId, citation.id, { [field]: next });
+    await updateCitation(clientSlug, citation.id, { [field]: next });
     await reload();
   }
 
@@ -630,7 +630,7 @@ export default function CitationsPage() {
           label="Check NAP"
           loadingLabel="Checking..."
           icon={<RefreshCw className="h-3.5 w-3.5" />}
-          onClick={() => triggerCitationCheck(clientId)}
+          onClick={() => triggerCitationCheck(clientSlug)}
           onSuccess={() => reload()}
         />
         <button

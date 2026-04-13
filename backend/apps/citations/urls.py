@@ -11,10 +11,10 @@ dir_router = DefaultRouter()
 dir_router.register(r"citation-directories", CitationDirectoryViewSet, basename="citation-directory")
 
 urlpatterns = [
-    path("clients/<int:client_pk>/citations/summary/", CitationSummaryView.as_view(), name="citation-summary"),
-    path("clients/<int:client_pk>/citations/import/", CitationImportView.as_view(), name="citation-import"),
-    path("clients/<int:client_pk>/citations/export/", CitationExportView.as_view(), name="citation-export"),
-    path("clients/<int:client_pk>/citations/check/", CitationCheckView.as_view(), name="citation-check"),
-    path("clients/<int:client_pk>/", include(router.urls)),
+    path("clients/<slug:client_slug>/citations/summary/", CitationSummaryView.as_view(), name="citation-summary"),
+    path("clients/<slug:client_slug>/citations/import/", CitationImportView.as_view(), name="citation-import"),
+    path("clients/<slug:client_slug>/citations/export/", CitationExportView.as_view(), name="citation-export"),
+    path("clients/<slug:client_slug>/citations/check/", CitationCheckView.as_view(), name="citation-check"),
+    path("clients/<slug:client_slug>/", include(router.urls)),
     path("", include(dir_router.urls)),
 ]

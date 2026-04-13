@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import {
   fetchSiteAudits,
   fetchAuditPages,
+  fetchAuditResults,
   fetchLighthouseResults,
   runAudit,
   runLighthouse,
@@ -202,7 +203,7 @@ function CWVMetric({
 
 export default function AuditPage() {
   const params = useParams();
-  const clientId = Number(params.id);
+  const clientSlug = params.slug as string;
 
   const [audit, setAudit] = useState<SiteAuditData | null>(null);
   const [pages, setPages] = useState<AuditPageData[]>([]);
@@ -220,8 +221,8 @@ export default function AuditPage() {
     (async () => {
       try {
         const [auditsRes, lhRes] = await Promise.all([
-          fetchSiteAudits(clientId),
-          fetchLighthouseResults(clientId),
+          fetchSiteAudits(clientSlug),
+          fetchLighthouseResults(clientSlug),
         ]);
         if (cancelled) return;
 
@@ -230,7 +231,7 @@ export default function AuditPage() {
         setLighthouse(lhRes.results);
 
         if (latest) {
-          const pagesRes = await fetchAuditPages(clientId, latest.id);
+          const pagesRes = await fetchAuditPages(clientSlug, latest.id);
           if (!cancelled) setPages(pagesRes.results);
         }
       } catch (e) {
@@ -243,7 +244,7 @@ export default function AuditPage() {
     return () => {
       cancelled = true;
     };
-  }, [clientId]);
+  }, [clientSlug]);
 
   /* search pages */
   useEffect(() => {
@@ -252,7 +253,7 @@ export default function AuditPage() {
     const timeout = setTimeout(async () => {
       const params = pageSearch ? `search=${encodeURIComponent(pageSearch)}` : "";
       try {
-        const res = await fetchAuditPages(clientId, audit.id, params);
+        const res = await fetchAuditPages(clientSlug, audit.id, params);
         if (!cancelled) setPages(res.results);
       } catch (e) {
         console.error(e);
@@ -262,7 +263,7 @@ export default function AuditPage() {
       cancelled = true;
       clearTimeout(timeout);
     };
-  }, [pageSearch, audit, clientId]);
+  }, [pageSearch, audit, clientSlug]);
 
   /* derived scores */
   const scores = useMemo(() => {
@@ -327,9 +328,55 @@ export default function AuditPage() {
           Run your first audit to get a comprehensive analysis of technical SEO,
           on-page issues, performance, and more.
         </p>
-        <button className="px-5 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors">
-          Run Audit
-        </button>
+        <ActionButton
+          label="Run Audit"
+          loadingLabel="Starting audit..."
+          icon={<RefreshCw className="h-4 w-4" />}
+          onClick={() => runAudit(clientSlug)}
+          onSuccess={() => {
+            fetchSiteAudits(clientSlug).then((res) => {
+              const latest = res.results[0] ?? null;
+              setAudit(latest);
+            });
+          }}
+        />
+      </div>
+    );
+  }
+
+  /* crawling state — audit started but results not fetched yet */
+  if (audit.status === "crawling") {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl font-bold text-gray-900">Site Audit</h1>
+        </div>
+        <div className="flex flex-col items-center justify-center h-80 gap-4 bg-white rounded-xl border border-gray-200 shadow-sm">
+          <Loader2 className="h-12 w-12 animate-spin text-blue-500" />
+          <h2 className="text-lg font-semibold text-gray-700">
+            Crawl in progress...
+          </h2>
+          <p className="text-sm text-gray-500 max-w-md text-center">
+            DataForSEO is crawling <strong>{audit.target_url}</strong>. This usually takes 2-5 minutes.
+            Click below to check if results are ready.
+          </p>
+          <ActionButton
+            label="Fetch Results"
+            loadingLabel="Checking..."
+            icon={<RefreshCw className="h-4 w-4" />}
+            onClick={() => fetchAuditResults(clientSlug)}
+            onSuccess={() => {
+              fetchSiteAudits(clientSlug).then((res) => {
+                const latest = res.results[0] ?? null;
+                setAudit(latest);
+                if (latest && latest.status === "completed") {
+                  fetchAuditPages(clientSlug, latest.id).then((pagesRes) => setPages(pagesRes.results));
+                  fetchLighthouseResults(clientSlug).then((lhRes) => setLighthouse(lhRes.results));
+                }
+              });
+            }}
+          />
+        </div>
       </div>
     );
   }
@@ -356,13 +403,13 @@ export default function AuditPage() {
               label="Run Audit"
               loadingLabel="Auditing..."
               icon={<RefreshCw className="h-3.5 w-3.5" />}
-              onClick={() => runAudit(clientId)}
+              onClick={() => runAudit(clientSlug)}
               onSuccess={() => {
-                fetchSiteAudits(clientId).then((res) => {
+                fetchSiteAudits(clientSlug).then((res) => {
                   const latest = res.results[0] ?? null;
                   setAudit(latest);
                   if (latest) {
-                    fetchAuditPages(clientId, latest.id).then((pagesRes) => setPages(pagesRes.results));
+                    fetchAuditPages(clientSlug, latest.id).then((pagesRes) => setPages(pagesRes.results));
                   }
                 });
               }}
@@ -371,9 +418,9 @@ export default function AuditPage() {
               label="Run Lighthouse"
               loadingLabel="Running..."
               icon={<RefreshCw className="h-3.5 w-3.5" />}
-              onClick={() => runLighthouse(clientId)}
+              onClick={() => runLighthouse(clientSlug)}
               onSuccess={() => {
-                fetchLighthouseResults(clientId).then((res) => setLighthouse(res.results));
+                fetchLighthouseResults(clientSlug).then((res) => setLighthouse(res.results));
               }}
             />
           </div>

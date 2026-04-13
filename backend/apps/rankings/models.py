@@ -2,11 +2,12 @@ from django.db import models
 
 
 class SERPResult(models.Model):
-    """One organic desktop SERP snapshot for one keyword on one date."""
+    """One organic SERP snapshot for one keyword on one date and device."""
     keyword = models.ForeignKey("keywords.Keyword", on_delete=models.CASCADE, related_name="serp_results")
     client = models.ForeignKey("clients.Client", on_delete=models.CASCADE, related_name="serp_results")
 
     checked_at = models.DateField(db_index=True)
+    device = models.CharField(max_length=10, default="desktop")
 
     # Position
     rank_absolute = models.IntegerField(null=True, blank=True)
@@ -24,6 +25,7 @@ class SERPResult(models.Model):
     # SERP evidence
     serp_url = models.URLField(max_length=2048, blank=True)          # Google SERP URL for this query
     screenshot_url = models.URLField(max_length=2048, blank=True)    # Stored screenshot of SERP
+    screenshot_urls = models.JSONField(default=list, blank=True)
 
     # Change tracking
     rank_change = models.IntegerField(null=True, blank=True)
@@ -53,7 +55,7 @@ class SERPResult(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        unique_together = [("keyword", "checked_at")]
+        unique_together = [("keyword", "checked_at", "device")]
         ordering = ["-checked_at"]
         indexes = [
             models.Index(fields=["keyword", "-checked_at"]),

@@ -26,7 +26,7 @@ class BacklinkSnapshotListView(DateRangeFilterMixin, generics.ListAPIView):
     serializer_class = BacklinkSnapshotSerializer
 
     def get_queryset(self):
-        qs = BacklinkSnapshot.objects.filter(client_id=self.kwargs["client_pk"])
+        qs = BacklinkSnapshot.objects.filter(client__slug=self.kwargs["client_slug"])
         return self.filter_by_date_range(qs)
 
 
@@ -37,7 +37,7 @@ class BacklinkListView(generics.ListAPIView):
     ordering_fields = ["first_seen", "last_seen", "source_rank"]
 
     def get_queryset(self):
-        return Backlink.objects.filter(client_id=self.kwargs["client_pk"])
+        return Backlink.objects.filter(client__slug=self.kwargs["client_slug"])
 
 
 class ReferringDomainListView(generics.ListAPIView):
@@ -46,7 +46,7 @@ class ReferringDomainListView(generics.ListAPIView):
     ordering_fields = ["backlinks_count", "dofollow_count", "rank", "first_seen"]
 
     def get_queryset(self):
-        return ReferringDomain.objects.filter(client_id=self.kwargs["client_pk"])
+        return ReferringDomain.objects.filter(client__slug=self.kwargs["client_slug"])
 
 
 class AnchorTextListView(generics.ListAPIView):
@@ -55,15 +55,15 @@ class AnchorTextListView(generics.ListAPIView):
     ordering_fields = ["backlinks_count", "referring_domains", "dofollow"]
 
     def get_queryset(self):
-        return AnchorText.objects.filter(client_id=self.kwargs["client_pk"])
+        return AnchorText.objects.filter(client__slug=self.kwargs["client_slug"])
 
 
 class BacklinkSummaryView(APIView):
     """Return the latest snapshot summary for a client, or aggregate from records."""
 
-    def get(self, request, client_pk):
+    def get(self, request, client_slug):
         snapshot = (
-            BacklinkSnapshot.objects.filter(client_id=client_pk)
+            BacklinkSnapshot.objects.filter(client__slug=client_slug)
             .order_by("-date")
             .first()
         )
@@ -83,7 +83,7 @@ class BacklinkSummaryView(APIView):
             }
         else:
             # Aggregate from individual records
-            backlinks = Backlink.objects.filter(client_id=client_pk)
+            backlinks = Backlink.objects.filter(client__slug=client_slug)
             data = {
                 "total_backlinks": backlinks.count(),
                 "referring_domains": backlinks.values("source_domain").distinct().count(),

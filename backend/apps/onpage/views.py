@@ -8,7 +8,7 @@ class SiteAuditListView(generics.ListAPIView):
     serializer_class = SiteAuditSerializer
 
     def get_queryset(self):
-        return SiteAudit.objects.filter(client_id=self.kwargs["client_pk"])
+        return SiteAudit.objects.filter(client__slug=self.kwargs["client_slug"])
 
 
 class SiteAuditDetailView(generics.RetrieveAPIView):
@@ -16,7 +16,7 @@ class SiteAuditDetailView(generics.RetrieveAPIView):
     lookup_url_kwarg = "audit_pk"
 
     def get_queryset(self):
-        return SiteAudit.objects.filter(client_id=self.kwargs["client_pk"])
+        return SiteAudit.objects.filter(client__slug=self.kwargs["client_slug"])
 
 
 class AuditPageListView(generics.ListAPIView):
@@ -27,7 +27,7 @@ class AuditPageListView(generics.ListAPIView):
     def get_queryset(self):
         return AuditPage.objects.filter(
             audit_id=self.kwargs["audit_pk"],
-            audit__client_id=self.kwargs["client_pk"],
+            audit__client__slug=self.kwargs["client_slug"],
         )
 
 
@@ -35,4 +35,4 @@ class LighthouseListView(generics.ListAPIView):
     serializer_class = LighthouseResultSerializer
 
     def get_queryset(self):
-        return LighthouseResult.objects.filter(client_id=self.kwargs["client_pk"])
+        return LighthouseResult.objects.filter(client__slug=self.kwargs["client_slug"])

@@ -101,8 +101,8 @@ function Badge({
 /* ------------------------------------------------------------------ */
 
 export default function BacklinksPage() {
-  const { id } = useParams<{ id: string }>();
-  const clientId = Number(id);
+  const { slug } = useParams<{ slug: string }>();
+  const clientSlug = slug;
 
   const [tab, setTab] = useState<Tab>("backlinks");
   const [loading, setLoading] = useState(true);
@@ -126,12 +126,12 @@ export default function BacklinksPage() {
 
   const loadSummary = useCallback(async () => {
     try {
-      const s = await fetchBacklinkSummary(clientId);
+      const s = await fetchBacklinkSummary(clientSlug);
       setSummary(s);
     } catch {
       /* ignore */
     }
-  }, [clientId]);
+  }, [clientSlug]);
 
   const loadBacklinks = useCallback(async () => {
     try {
@@ -139,13 +139,13 @@ export default function BacklinksPage() {
       params.set("page", String(blPage));
       params.set("page_size", String(PAGE_SIZE));
       if (search) params.set("search", search);
-      const res = await fetchBacklinks(clientId, params.toString());
+      const res = await fetchBacklinks(clientSlug, params.toString());
       setBacklinks(res.results);
       setBlCount(res.count);
     } catch {
       /* ignore */
     }
-  }, [clientId, blPage, search]);
+  }, [clientSlug, blPage, search]);
 
   const loadDomains = useCallback(async () => {
     try {
@@ -153,13 +153,13 @@ export default function BacklinksPage() {
       params.set("page", String(rdPage));
       params.set("page_size", String(PAGE_SIZE));
       if (search) params.set("search", search);
-      const res = await fetchReferringDomains(clientId, params.toString());
+      const res = await fetchReferringDomains(clientSlug, params.toString());
       setDomains(res.results);
       setRdCount(res.count);
     } catch {
       /* ignore */
     }
-  }, [clientId, rdPage, search]);
+  }, [clientSlug, rdPage, search]);
 
   const loadAnchors = useCallback(async () => {
     try {
@@ -167,13 +167,13 @@ export default function BacklinksPage() {
       params.set("page", String(anPage));
       params.set("page_size", String(PAGE_SIZE));
       if (search) params.set("search", search);
-      const res = await fetchAnchors(clientId, params.toString());
+      const res = await fetchAnchors(clientSlug, params.toString());
       setAnchorTexts(res.results);
       setAnCount(res.count);
     } catch {
       /* ignore */
     }
-  }, [clientId, anPage, search]);
+  }, [clientSlug, anPage, search]);
 
   // Initial load
   useEffect(() => {
@@ -246,7 +246,7 @@ export default function BacklinksPage() {
           label="Pull Backlinks"
           loadingLabel="Pulling..."
           icon={<RefreshCw className="h-3.5 w-3.5" />}
-          onClick={() => runBacklinks(clientId)}
+          onClick={() => runBacklinks(clientSlug)}
           onSuccess={() => {
             Promise.all([loadSummary(), loadBacklinks(), loadDomains(), loadAnchors()]);
           }}

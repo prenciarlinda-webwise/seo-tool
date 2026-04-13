@@ -13,9 +13,9 @@ router = DefaultRouter()
 router.register(r"ga4-properties", GA4PropertyViewSet, basename="ga4-property")
 
 urlpatterns = [
-    path("clients/<int:client_pk>/", include(router.urls)),
-    path("clients/<int:client_pk>/analytics/traffic/", GA4TrafficListView.as_view(), name="ga4-traffic"),
-    path("clients/<int:client_pk>/analytics/landing-pages/", GA4LandingPageListView.as_view(), name="ga4-landing-pages"),
-    path("clients/<int:client_pk>/analytics/events/", GA4EventListView.as_view(), name="ga4-events"),
-    path("clients/<int:client_pk>/analytics/conversions/", GA4ConversionSummaryListView.as_view(), name="ga4-conversions"),
+    path("clients/<slug:client_slug>/", include(router.urls)),
+    path("clients/<slug:client_slug>/analytics/traffic/", GA4TrafficListView.as_view(), name="ga4-traffic"),
+    path("clients/<slug:client_slug>/analytics/landing-pages/", GA4LandingPageListView.as_view(), name="ga4-landing-pages"),
+    path("clients/<slug:client_slug>/analytics/events/", GA4EventListView.as_view(), name="ga4-events"),
+    path("clients/<slug:client_slug>/analytics/conversions/", GA4ConversionSummaryListView.as_view(), name="ga4-conversions"),
 ]

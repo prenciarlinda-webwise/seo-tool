@@ -1,6 +1,7 @@
 import logging
 from datetime import timedelta
 
+from django.conf import settings
 from django.db.models import Avg, Count, Q, Sum
 from django.utils import timezone
 from rest_framework import viewsets
@@ -22,6 +23,7 @@ class ClientViewSet(viewsets.ModelViewSet):
     search_fields = ["name", "domain"]
     filterset_fields = ["is_active", "track_organic", "track_maps"]
     ordering_fields = ["name", "domain", "created_at"]
+    lookup_field = "slug"
 
     def get_queryset(self):
         qs = Client.objects.all()
@@ -87,14 +89,14 @@ class ClientViewSet(viewsets.ModelViewSet):
 
         # Discovery first — finds keywords the client ranks for
         if client.discovery_enabled:
-            monthly_keyword_discovery.delay()
+            monthly_keyword_discovery.delay(client_id=client.id)
 
         # Check citations if any exist
         if client.citations.exists():
             check_citations_for_client.delay(client.id)
 
     @action(detail=True, methods=["post"])
-    def sync(self, request, pk=None):
+    def sync(self, request, slug=None):
         """Full data sync — each step independent, errors don't block next step."""
         client = self.get_object()
         results = {}
@@ -116,7 +118,12 @@ class ClientViewSet(viewsets.ModelViewSet):
                         and kw.discovery_rank and kw.discovery_rank <= 50):
                     kw.status = "tracked"
                     kw.promoted_at = timezone.now()
-                    kw.save(update_fields=["status", "promoted_at", "updated_at"])
+                    # Carry discovery rank into current rank
+                    if kw.current_organic_rank is None and kw.discovery_rank:
+                        kw.current_organic_rank = kw.discovery_rank
+                    kw.save(update_fields=[
+                        "status", "promoted_at", "current_organic_rank", "updated_at",
+                    ])
                     promoted += 1
             results["auto_promoted"] = promoted
         except Exception as e:
@@ -141,25 +148,15 @@ class ClientViewSet(viewsets.ModelViewSet):
         except Exception as e:
             results["competitors"] = f"skipped: {e}"
 
-        # 4. Rank tracking
-        try:
-            from apps.rankings.tasks import _check_keyword_rankings
-            from apps.keywords.models import Keyword
-            from services.dataforseo import SERPService, MapsService
-            from datetime import date
-            api = self._api_client()
-            serp, maps = SERPService(api), MapsService(api)
-            tracked = Keyword.objects.filter(client=client, status="tracked")
-            checked = 0
-            for kw in tracked:
-                try:
-                    _check_keyword_rankings(kw, client, date.today(), serp, maps)
-                    checked += 1
-                except Exception:
-                    pass
-            results["ranks_checked"] = checked
-        except Exception as e:
-            results["ranks_checked"] = f"skipped: {e}"
+        # 4. Rank tracking — spawn as subprocess (survives server restarts)
+        import subprocess, sys
+        subprocess.Popen(
+            [sys.executable, "manage.py", "weekly_scan", "--client", str(client.id), "--no-discovery", "--no-screenshots"],
+            cwd=str(settings.BASE_DIR),
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+        results["ranks_checked"] = "started in background"
 
         # 5. Citations
         try:
@@ -183,7 +180,7 @@ class ClientViewSet(viewsets.ModelViewSet):
         return DataForSEOClient(settings.DATAFORSEO_LOGIN, settings.DATAFORSEO_PASSWORD)
 
     @action(detail=True, methods=["post"], url_path="run-discovery")
-    def run_discovery(self, request, pk=None):
+    def run_discovery(self, request, slug=None):
         client = self.get_object()
         try:
             from apps.discovery.tasks import _discover_keywords_for_client
@@ -196,33 +193,29 @@ class ClientViewSet(viewsets.ModelViewSet):
             return Response({"message": f"Discovery failed: {e}"}, status=200)
 
     @action(detail=True, methods=["post"], url_path="run-ranks")
-    def run_ranks(self, request, pk=None):
+    def run_ranks(self, request, slug=None):
+        import subprocess, sys
         client = self.get_object()
-        try:
-            from apps.rankings.tasks import _check_keyword_rankings
-            from apps.keywords.models import Keyword
-            from services.dataforseo import SERPService, MapsService
-            from datetime import date
+        from apps.keywords.models import Keyword
+        tracked_count = Keyword.objects.filter(client=client, status="tracked").count()
 
-            api = self._api_client()
-            serp, maps = SERPService(api), MapsService(api)
-            tracked = Keyword.objects.filter(client=client, status="tracked")
-            checked, failed = 0, 0
-            for kw in tracked:
-                try:
-                    _check_keyword_rankings(kw, client, date.today(), serp, maps)
-                    checked += 1
-                except Exception:
-                    failed += 1
-            return Response({"message": f"Checked {checked} keywords, {failed} failed"})
-        except DataForSEOAPIError as e:
-            return Response({"message": f"Rank tracking unavailable: {e}"}, status=200)
-        except Exception as e:
-            logger.exception("Rank tracking failed for %s", client.domain)
-            return Response({"message": f"Rank tracking failed: {e}"}, status=200)
+        if tracked_count == 0:
+            return Response({"message": "No tracked keywords to check."})
+
+        # Spawn management command as a subprocess — survives server restarts
+        subprocess.Popen(
+            [sys.executable, "manage.py", "weekly_scan", "--client", str(client.id), "--no-discovery", "--no-screenshots"],
+            cwd=str(settings.BASE_DIR),
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+
+        return Response({
+            "message": f"Rank check started for {tracked_count} keywords. Results arrive in 2-5 min — refresh to see updates."
+        })
 
     @action(detail=True, methods=["post"], url_path="run-backlinks")
-    def run_backlinks(self, request, pk=None):
+    def run_backlinks(self, request, slug=None):
         client = self.get_object()
         try:
             from services.dataforseo import BacklinksService
@@ -285,7 +278,7 @@ class ClientViewSet(viewsets.ModelViewSet):
             return Response({"message": f"Backlinks failed: {e}"}, status=200)
 
     @action(detail=True, methods=["post"], url_path="run-audit")
-    def run_audit(self, request, pk=None):
+    def run_audit(self, request, slug=None):
         client = self.get_object()
         try:
             from services.dataforseo import OnPageService
@@ -308,8 +301,119 @@ class ClientViewSet(viewsets.ModelViewSet):
             logger.exception("Audit failed for %s", client.domain)
             return Response({"message": f"Audit failed: {e}"}, status=200)
 
+    @action(detail=True, methods=["post"], url_path="fetch-audit-results")
+    def fetch_audit_results(self, request, slug=None):
+        """Poll DataForSEO for crawl results and populate the SiteAudit + AuditPages."""
+        client = self.get_object()
+        try:
+            from services.dataforseo import OnPageService
+            from apps.onpage.models import SiteAudit, AuditPage
+
+            audit = SiteAudit.objects.filter(
+                client=client, status="crawling",
+            ).order_by("-created_at").first()
+
+            if not audit or not audit.dataforseo_task_id:
+                return Response({"message": "No crawling audit found.", "status": "none"})
+
+            api = self._api_client()
+            op = OnPageService(api)
+
+            summary = op.get_crawl_summary(audit.dataforseo_task_id)
+            if not summary:
+                return Response({"message": "Crawl still in progress. Try again in a minute.", "status": "crawling"})
+
+            crawl_progress = summary.get("crawl_progress", "")
+            if crawl_progress != "finished":
+                return Response({
+                    "message": f"Crawl in progress ({crawl_progress}). Try again soon.",
+                    "status": "crawling",
+                })
+
+            # Crawl finished — extract summary stats
+            crawl_status = summary.get("crawl_status", {}) or {}
+            domain_info = summary.get("domain_info", {}) or {}
+
+            audit.pages_crawled = crawl_status.get("pages_crawled", 0)
+            audit.pages_with_errors = crawl_status.get("pages_with_errors", 0) or 0
+            audit.pages_with_warnings = crawl_status.get("pages_with_warnings", 0) or 0
+
+            # Page errors
+            page_metrics = summary.get("page_metrics", {}) or {}
+            checks = page_metrics.get("checks", {}) or {}
+            audit.total_4xx_errors = checks.get("is_4xx_code", 0) or 0
+            audit.total_5xx_errors = checks.get("is_5xx_code", 0) or 0
+            audit.broken_links_count = checks.get("is_broken", 0) or 0
+            audit.redirect_chains_count = checks.get("is_redirect", 0) or 0
+
+            # SEO checks
+            audit.duplicate_titles = checks.get("has_duplicate_title", 0) or 0
+            audit.duplicate_descriptions = checks.get("has_duplicate_description", 0) or 0
+            audit.missing_titles = checks.get("no_title", 0) or 0
+            audit.missing_descriptions = checks.get("no_description", 0) or 0
+            audit.missing_h1 = checks.get("no_h1_tag", 0) or 0
+            audit.missing_alt_tags = checks.get("no_image_alt", 0) or 0
+            audit.non_indexable_pages = checks.get("is_non_indexable", 0) or 0
+            audit.thin_content_pages = checks.get("low_content_rate", 0) or 0
+
+            # SSL
+            audit.has_ssl = domain_info.get("ssl_info", {}).get("valid_certificate", None)
+            audit.has_robots_txt = domain_info.get("checks", {}).get("robots_txt", None) if domain_info.get("checks") else None
+            audit.has_sitemap = domain_info.get("checks", {}).get("sitemap", None) if domain_info.get("checks") else None
+
+            # Performance from page_metrics
+            audit.avg_page_load_time = page_metrics.get("avg_load_time")
+            audit.avg_page_size = page_metrics.get("avg_size")
+            audit.avg_word_count = page_metrics.get("avg_content_length")
+
+            audit.status = "completed"
+            audit.completed_at = timezone.now()
+            audit.save()
+
+            # Fetch individual pages
+            pages_data = op.get_pages(audit.dataforseo_task_id, limit=200)
+            pages_created = 0
+            for item in pages_data.get("items", []):
+                meta = item.get("meta", {}) or {}
+                onpage_score = item.get("onpage_score")
+                AuditPage.objects.update_or_create(
+                    audit=audit,
+                    url=item.get("url", ""),
+                    defaults={
+                        "client": client,
+                        "status_code": item.get("status_code"),
+                        "title": (meta.get("title") or "")[:1000],
+                        "description": meta.get("description") or "",
+                        "h1": (meta.get("htags", {}) or {}).get("h1", [""])[0][:1000] if (meta.get("htags", {}) or {}).get("h1") else "",
+                        "word_count": meta.get("content", {}).get("plain_text_word_count") if meta.get("content") else None,
+                        "content_size": item.get("size"),
+                        "page_load_time": item.get("fetch_time"),
+                        "page_size": item.get("size"),
+                        "internal_links_count": item.get("internal_links_count", 0) or 0,
+                        "external_links_count": item.get("external_links_count", 0) or 0,
+                        "broken_links_count": item.get("broken_links", 0) or 0,
+                        "images_count": item.get("images_count", 0) or 0,
+                        "images_missing_alt": item.get("images_alt_count", 0) or 0,
+                        "is_indexable": not (item.get("meta", {}) or {}).get("is_non_indexable", False),
+                        "errors": item.get("checks", {}) if item.get("checks") else [],
+                        "warnings": [],
+                    },
+                )
+                pages_created += 1
+
+            return Response({
+                "message": f"Audit complete: {audit.pages_crawled} pages crawled, {pages_created} page records.",
+                "status": "completed",
+                "audit_id": audit.id,
+            })
+        except DataForSEOAPIError as e:
+            return Response({"message": f"Fetch failed: {e}", "status": "error"}, status=200)
+        except Exception as e:
+            logger.exception("Fetch audit results failed for %s", client.domain)
+            return Response({"message": f"Fetch failed: {e}", "status": "error"}, status=200)
+
     @action(detail=True, methods=["post"], url_path="run-lighthouse")
-    def run_lighthouse(self, request, pk=None):
+    def run_lighthouse(self, request, slug=None):
         client = self.get_object()
         try:
             from services.dataforseo import OnPageService
@@ -339,7 +443,7 @@ class ClientViewSet(viewsets.ModelViewSet):
             return Response({"message": f"Lighthouse failed: {e}"}, status=200)
 
     @action(detail=True, methods=["post"], url_path="run-competitors")
-    def run_competitors(self, request, pk=None):
+    def run_competitors(self, request, slug=None):
         client = self.get_object()
         try:
             from services.dataforseo import LabsService
@@ -367,7 +471,7 @@ class ClientViewSet(viewsets.ModelViewSet):
             return Response({"message": f"Competitors failed: {e}"}, status=200)
 
     @action(detail=True, methods=["get"])
-    def summary(self, request, pk=None):
+    def summary(self, request, slug=None):
         client = self.get_object()
         keywords = client.keywords.all()
         tracked = keywords.filter(status=KeywordStatus.TRACKED)
@@ -415,7 +519,7 @@ class ClientViewSet(viewsets.ModelViewSet):
 
         desktop_summary = _type_summary(
             tracked, "current_organic_rank",
-            SERPResult.objects.filter(client=client), "rank_absolute",
+            SERPResult.objects.filter(client=client, device="desktop"), "rank_absolute",
             top_ns=[3, 10, 20, 50],
         )
 
@@ -473,13 +577,11 @@ class ClientViewSet(viewsets.ModelViewSet):
             finder_summary["in_top_10"] = finder_latest.filter(rank__lte=10).count()
             finder_summary["in_top_20"] = finder_latest.filter(rank__lte=20).count()
 
-        # Mobile placeholder (same structure, no data yet)
-        mobile_summary = {
-            "found": 0, "not_found": total_tracked, "avg_rank": None,
-            "improved": 0, "declined": 0,
-            "in_top_3": 0, "in_top_10": 0, "in_top_20": 0, "in_top_50": 0,
-            "history": [],
-        }
+        mobile_summary = _type_summary(
+            tracked, "current_mobile_rank",
+            SERPResult.objects.filter(client=client, device="mobile"), "rank_absolute",
+            top_ns=[3, 10, 20, 50],
+        )
 
         # --- GBP ---
         latest_review = client.gbp_reviews.order_by("-date").first()

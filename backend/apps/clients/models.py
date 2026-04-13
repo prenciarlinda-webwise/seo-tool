@@ -1,9 +1,11 @@
 from django.db import models
+from django.utils.text import slugify
 
 
 class Client(models.Model):
     # Identity
     name = models.CharField(max_length=255)
+    slug = models.SlugField(max_length=255, unique=True, blank=True)
     domain = models.CharField(max_length=255, unique=True)
     website_url = models.URLField(max_length=2048, blank=True)
 
@@ -31,6 +33,7 @@ class Client(models.Model):
     # Tracking configuration
     is_active = models.BooleanField(default=True)
     track_organic = models.BooleanField(default=True)
+    track_mobile = models.BooleanField(default=True)
     track_maps = models.BooleanField(default=False)
     discovery_enabled = models.BooleanField(default=True)
     max_discovery_keywords = models.IntegerField(default=1000)
@@ -48,6 +51,17 @@ class Client(models.Model):
 
     class Meta:
         ordering = ["name"]
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            base = slugify(self.name)
+            slug = base
+            n = 1
+            while Client.objects.filter(slug=slug).exclude(pk=self.pk).exists():
+                slug = f"{base}-{n}"
+                n += 1
+            self.slug = slug
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"{self.name} ({self.domain})"

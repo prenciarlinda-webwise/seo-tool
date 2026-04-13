@@ -22,28 +22,26 @@ const mainNav = [
   { label: "Clients", href: "/clients", icon: Users },
 ];
 
-function clientNav(id: string) {
+function clientNav(slug: string) {
   return [
-    { label: "Dashboard", href: `/clients/${id}`, icon: LayoutDashboard },
-    { label: "Plans", href: `/clients/${id}/plans`, icon: ClipboardList },
-    { label: "Rank Tracker", href: `/clients/${id}/rankings`, icon: TrendingUp },
-    { label: "Pages", href: `/clients/${id}/pages`, icon: FileText },
-    { label: "GBP Insights", href: `/clients/${id}/gbp`, icon: MapPin },
-    { label: "Analytics", href: `/clients/${id}/analytics`, icon: BarChart3 },
-    { label: "Citations", href: `/clients/${id}/citations`, icon: Building2 },
-    { label: "Backlinks", href: `/clients/${id}/backlinks`, icon: Link2 },
-    { label: "Site Audit", href: `/clients/${id}/audit`, icon: FileSearch },
-    { label: "Discovery", href: `/clients/${id}/discovery`, icon: Search },
+    { label: "Dashboard", href: `/clients/${slug}`, icon: LayoutDashboard },
+    { label: "Plans", href: `/clients/${slug}/plans`, icon: ClipboardList },
+    { label: "Rank Tracker", href: `/clients/${slug}/rankings`, icon: TrendingUp },
+    { label: "Pages", href: `/clients/${slug}/pages`, icon: FileText },
+    { label: "GBP Insights", href: `/clients/${slug}/gbp`, icon: MapPin },
+    { label: "Analytics", href: `/clients/${slug}/analytics`, icon: BarChart3 },
+    { label: "Backlinks", href: `/clients/${slug}/backlinks`, icon: Link2 },
+    { label: "Discovery", href: `/clients/${slug}/discovery`, icon: Search },
   ];
 }
 
 export default function Sidebar() {
   const pathname = usePathname();
 
-  const clientMatch = pathname.match(/^\/clients\/(\d+)/);
-  const clientId = clientMatch?.[1];
+  const clientMatch = pathname.match(/^\/clients\/([^/]+)/);
+  const clientSlug = clientMatch?.[1];
 
-  const links = clientId ? clientNav(clientId) : mainNav;
+  const links = clientSlug ? clientNav(clientSlug) : mainNav;
 
   return (
     <aside className="w-56 border-r border-gray-200 bg-white flex flex-col h-full">
@@ -54,7 +52,7 @@ export default function Sidebar() {
         </Link>
       </div>
 
-      {clientId && (
+      {clientSlug && (
         <div className="px-4 py-2 border-b border-gray-100">
           <Link
             href="/clients"
@@ -69,7 +67,7 @@ export default function Sidebar() {
         {links.map(({ label, href, icon: Icon }) => {
           const active =
             href === pathname ||
-            (href !== `/clients/${clientId}` && pathname.startsWith(href));
+            (href !== `/clients/${clientSlug}` && pathname.startsWith(href));
 
           return (
             <Link

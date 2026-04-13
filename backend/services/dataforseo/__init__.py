@@ -1,6 +1,7 @@
 from .client import DataForSEOClient
 from .serp import SERPService
 from .maps import MapsService
+from .local_finder import LocalFinderService
 from .labs import LabsService
 from .backlinks import BacklinksService
 from .business_data import BusinessDataService
@@ -13,6 +14,7 @@ __all__ = [
     "DataForSEOClient",
     "SERPService",
     "MapsService",
+    "LocalFinderService",
     "LabsService",
     "BacklinksService",
     "BusinessDataService",

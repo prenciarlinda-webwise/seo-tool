@@ -1,5 +1,7 @@
 from rest_framework import viewsets
 
+from apps.clients.models import Client
+
 from .models import Competitor
 from .serializers import CompetitorSerializer
 
@@ -9,7 +11,8 @@ class CompetitorViewSet(viewsets.ModelViewSet):
     search_fields = ["domain", "name"]
 
     def get_queryset(self):
-        return Competitor.objects.filter(client_id=self.kwargs["client_pk"])
+        return Competitor.objects.filter(client__slug=self.kwargs["client_slug"])
 
     def perform_create(self, serializer):
-        serializer.save(client_id=self.kwargs["client_pk"])
+        client = Client.objects.get(slug=self.kwargs["client_slug"])
+        serializer.save(client=client)

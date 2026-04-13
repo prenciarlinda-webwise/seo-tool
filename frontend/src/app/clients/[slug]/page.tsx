@@ -13,8 +13,10 @@ import {
   ArrowUpRight,
   ArrowDownRight,
   BarChart3,
+  Building2,
   ChevronRight,
   ClipboardCheck,
+  Edit,
   Globe,
   Loader2,
   MapPin,
@@ -30,7 +32,7 @@ import {
   TrendingUp,
   Users,
 } from "lucide-react";
-import { fetchClientSummary, syncClient } from "@/lib/api";
+import { fetchClientSummary, syncClient, updateClient } from "@/lib/api";
 import { cn, formatNumber, formatPercent } from "@/lib/utils";
 
 /* ---------- helper components ---------- */
@@ -197,11 +199,146 @@ const RANKING_TYPES = [
   },
 ] as const;
 
+/* ---------- business info box ---------- */
+
+function BusinessInfoBox({ client, slug, onUpdate }: { client: Record<string, any>; slug: string; onUpdate: (updated: Record<string, any>) => void }) {
+  const [editing, setEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [form, setForm] = useState<Record<string, any>>({});
+
+  function startEdit() {
+    setForm({ ...client });
+    setEditing(true);
+  }
+
+  async function handleSave() {
+    setSaving(true);
+    try {
+      const payload: Record<string, any> = {};
+      const fields = [
+        "name", "domain", "website_url", "business_type",
+        "contact_name", "contact_email", "contact_phone",
+        "address", "city", "state", "zip_code", "country",
+        "google_business_name", "google_place_id", "google_cid",
+        "notes", "monthly_budget_usd", "contract_start_date", "contract_end_date",
+      ];
+      for (const f of fields) {
+        if (form[f] !== client[f]) {
+          payload[f] = form[f] ?? "";
+        }
+      }
+      if (Object.keys(payload).length > 0) {
+        const updated = await updateClient(slug, payload);
+        onUpdate(updated);
+      }
+      setEditing(false);
+    } catch (e) {
+      console.error("Save failed", e);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  const inputCls = "block w-full rounded-md border border-gray-300 px-2.5 py-1.5 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500";
+  const labelCls = "text-[11px] font-medium text-gray-500 uppercase tracking-wider mb-0.5";
+  const valueCls = "text-sm text-gray-900";
+
+  function Field({ label, field, type = "text", colSpan }: { label: string; field: string; type?: string; colSpan?: string }) {
+    return (
+      <div className={colSpan || ""}>
+        <p className={labelCls}>{label}</p>
+        {editing ? (
+          <input
+            type={type}
+            value={form[field] ?? ""}
+            onChange={(e) => setForm((p: any) => ({ ...p, [field]: e.target.value }))}
+            className={inputCls}
+          />
+        ) : (
+          <p className={valueCls}>{client[field] || <span className="text-gray-300">-</span>}</p>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-white rounded-xl border border-gray-200 shadow-sm mb-5 overflow-hidden">
+      <div className="flex items-center justify-between px-5 py-3 border-b border-gray-100 bg-gray-50/50">
+        <div className="flex items-center gap-2">
+          <Building2 className="h-4 w-4 text-gray-600" />
+          <h3 className="font-semibold text-gray-900">Business Information</h3>
+        </div>
+        <div className="flex items-center gap-2">
+          {editing ? (
+            <>
+              <button
+                onClick={() => setEditing(false)}
+                className="text-xs px-3 py-1.5 rounded-md border border-gray-300 text-gray-600 hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSave}
+                disabled={saving}
+                className="text-xs px-3 py-1.5 rounded-md bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50"
+              >
+                {saving ? "Saving..." : "Save"}
+              </button>
+            </>
+          ) : (
+            <button
+              onClick={startEdit}
+              className="text-xs px-3 py-1.5 rounded-md border border-gray-300 text-gray-600 hover:bg-gray-50 flex items-center gap-1"
+            >
+              <Edit className="h-3 w-3" /> Edit
+            </button>
+          )}
+        </div>
+      </div>
+      <div className="p-5">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-3">
+          <Field label="Business Name" field="name" />
+          <Field label="Domain" field="domain" />
+          <Field label="Website" field="website_url" />
+          <Field label="Business Type" field="business_type" />
+          <Field label="Contact Name" field="contact_name" />
+          <Field label="Contact Email" field="contact_email" type="email" />
+          <Field label="Contact Phone" field="contact_phone" />
+          <Field label="Google Business Name" field="google_business_name" />
+          <Field label="Address" field="address" />
+          <Field label="City" field="city" />
+          <Field label="State" field="state" />
+          <Field label="Zip Code" field="zip_code" />
+          <Field label="Country" field="country" />
+          <Field label="Google Place ID" field="google_place_id" />
+          <Field label="Google CID" field="google_cid" />
+          <Field label="Monthly Budget" field="monthly_budget_usd" type="number" />
+          <Field label="Contract Start" field="contract_start_date" type="date" />
+          <Field label="Contract End" field="contract_end_date" type="date" />
+        </div>
+        {/* Notes row - full width */}
+        <div className="mt-3">
+          <p className={labelCls}>Notes</p>
+          {editing ? (
+            <textarea
+              value={form.notes ?? ""}
+              onChange={(e) => setForm((p: any) => ({ ...p, notes: e.target.value }))}
+              rows={2}
+              className={inputCls}
+            />
+          ) : (
+            <p className={cn(valueCls, "whitespace-pre-wrap")}>{client.notes || <span className="text-gray-300">No notes</span>}</p>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ---------- main page ---------- */
 
 export default function ClientDashboardPage() {
-  const { id } = useParams<{ id: string }>();
-  const clientId = Number(id);
+  const { slug } = useParams<{ slug: string }>();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [data, setData] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
@@ -209,10 +346,10 @@ export default function ClientDashboardPage() {
   const [syncResult, setSyncResult] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchClientSummary(clientId)
+    fetchClientSummary(slug)
       .then((d) => setData(d as any))
       .finally(() => setLoading(false));
-  }, [clientId]);
+  }, [slug]);
 
   if (loading)
     return (
@@ -257,11 +394,11 @@ export default function ClientDashboardPage() {
               setSyncing(true);
               setSyncResult(null);
               try {
-                const res = await syncClient(clientId);
+                const res = await syncClient(slug);
                 setSyncResult(res.message);
                 // Reload dashboard after a delay
                 setTimeout(() => {
-                  fetchClientSummary(clientId).then((d) => setData(d as any));
+                  fetchClientSummary(slug).then((d) => setData(d as any));
                   setSyncResult(null);
                 }, 5000);
               } catch {
@@ -287,6 +424,13 @@ export default function ClientDashboardPage() {
           </button>
         </div>
       </div>
+
+      {/* Business Info */}
+      <BusinessInfoBox
+        client={client}
+        slug={slug}
+        onUpdate={(updated) => setData((prev: any) => ({ ...prev, client: updated }))}
+      />
 
       {/* Row 1: Rankings Overview — 4 cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-5">
@@ -383,14 +527,14 @@ export default function ClientDashboardPage() {
         })}
       </div>
 
-      {/* Row 2: GBP + Reviews */}
+      {/* Row 2: GBP + Analytics */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-5">
         {/* Google Business Profile */}
         <SectionCard
           title="Google Business Profile"
           icon={Globe}
           iconColor="text-blue-600"
-          href={`/clients/${id}/gbp`}
+          href={`/clients/${slug}/gbp`}
         >
           <p className="text-xs text-gray-500 mb-3">
             Customer Actions — Last 30 days
@@ -423,80 +567,12 @@ export default function ClientDashboardPage() {
           </div>
         </SectionCard>
 
-        {/* Reputation Manager */}
-        <SectionCard
-          title="Reputation Manager"
-          icon={Star}
-          iconColor="text-yellow-500"
-          href={`/clients/${id}/gbp`}
-        >
-          {reviews ? (
-            <>
-              <div className="flex items-start justify-between mb-5">
-                <div>
-                  <p className="text-xs text-gray-500 mb-1">Star Rating</p>
-                  <StarDisplay rating={reviews.average_rating} />
-                </div>
-                <div className="text-right">
-                  <MiniMetric
-                    label="Total Reviews"
-                    value={formatNumber(reviews.total_reviews)}
-                    icon={MessageSquare}
-                    color="text-blue-600"
-                  />
-                </div>
-              </div>
-
-              {/* Star distribution */}
-              <div className="space-y-1">
-                {[
-                  { label: "5", count: reviews.five_star ?? 0, color: "bg-green-500" },
-                  { label: "4", count: reviews.four_star ?? 0, color: "bg-green-400" },
-                  { label: "3", count: reviews.three_star ?? 0, color: "bg-yellow-400" },
-                  { label: "2", count: reviews.two_star ?? 0, color: "bg-orange-400" },
-                  { label: "1", count: reviews.one_star ?? 0, color: "bg-red-500" },
-                ].map((s) => (
-                  <div
-                    key={s.label}
-                    className="flex items-center gap-2 text-xs"
-                  >
-                    <span className="w-4 text-gray-500 flex items-center gap-0.5">
-                      {s.label}
-                      <Star className="h-2.5 w-2.5 text-yellow-400 fill-yellow-400" />
-                    </span>
-                    <div className="flex-1 bg-gray-100 rounded-full h-2 overflow-hidden">
-                      <div
-                        className={cn("h-full rounded-full", s.color)}
-                        style={{
-                          width: `${
-                            reviews.total_reviews > 0
-                              ? (s.count / reviews.total_reviews) * 100
-                              : 0
-                          }%`,
-                        }}
-                      />
-                    </div>
-                    <span className="w-6 text-gray-600">{s.count}</span>
-                  </div>
-                ))}
-              </div>
-            </>
-          ) : (
-            <div className="text-center py-6 text-gray-400 text-sm">
-              No review data yet
-            </div>
-          )}
-        </SectionCard>
-      </div>
-
-      {/* Row 3: Analytics + Citations */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-5">
         {/* Google Analytics */}
         <SectionCard
           title="Google Analytics"
           icon={BarChart3}
           iconColor="text-purple-600"
-          href={`/clients/${id}/analytics`}
+          href={`/clients/${slug}/analytics`}
         >
           <div className="grid grid-cols-3 gap-3 mb-4">
             <MiniMetric
@@ -571,68 +647,6 @@ export default function ClientDashboardPage() {
             </div>
           )}
         </SectionCard>
-
-        {/* Citations */}
-        <SectionCard
-          title="Citations"
-          icon={Search}
-          iconColor="text-emerald-600"
-          href={`/clients/${id}/citations`}
-        >
-          <div className="flex items-start justify-between mb-4">
-            <div>
-              <p className="text-xs text-gray-500 mb-1">Found / Total</p>
-              <div className="flex items-baseline gap-1">
-                <span className="text-3xl font-bold text-gray-900">
-                  {citations.found ?? 0}
-                </span>
-                <span className="text-lg text-gray-400">
-                  / {citations.total ?? 0}
-                </span>
-              </div>
-            </div>
-            <div className="text-right">
-              <p className="text-xs text-gray-500 mb-1">NAP Errors</p>
-              <span
-                className={cn(
-                  "text-2xl font-bold",
-                  (citations.nap_errors ?? 0) > 0
-                    ? "text-red-500"
-                    : "text-green-600"
-                )}
-              >
-                {citations.nap_errors ?? 0}
-              </span>
-            </div>
-          </div>
-
-          {/* Citation score visual */}
-          {citations.total > 0 && (
-            <div>
-              <div className="flex items-center justify-between text-xs text-gray-500 mb-1">
-                <span>Citation Coverage</span>
-                <span className="font-semibold text-gray-700">
-                  {citations.total > 0
-                    ? Math.round(((citations.found ?? 0) / citations.total) * 100)
-                    : 0}
-                  %
-                </span>
-              </div>
-              <div className="w-full bg-gray-100 rounded-full h-3 overflow-hidden">
-                <div
-                  className="h-full rounded-full bg-emerald-500 transition-all"
-                  style={{
-                    width: `${
-                      citations.total > 0
-                        ? ((citations.found ?? 0) / citations.total) * 100
-                        : 0
-                    }%`,
-                  }}
-                />
-              </div>
-            </div>
-          )}
-        </SectionCard>
       </div>
 
       {/* Row 4: Active Plan */}
@@ -645,7 +659,7 @@ export default function ClientDashboardPage() {
             </div>
             {activePlan && (
               <Link
-                href={`/clients/${id}/plans/${activePlan.id}`}
+                href={`/clients/${slug}/plans/${activePlan.id}`}
                 className="text-xs font-medium text-blue-600 hover:text-blue-800 flex items-center gap-1"
               >
                 View Plan <ChevronRight className="h-3 w-3" />
@@ -680,7 +694,7 @@ export default function ClientDashboardPage() {
               <div className="text-center py-4">
                 <p className="text-sm text-gray-400 mb-2">No active plan</p>
                 <Link
-                  href={`/clients/${id}/plans`}
+                  href={`/clients/${slug}/plans`}
                   className="text-sm font-medium text-blue-600 hover:text-blue-800"
                 >
                   Create Plan

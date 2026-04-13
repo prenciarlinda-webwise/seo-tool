@@ -1,6 +1,9 @@
 from rest_framework import viewsets, generics
 from rest_framework.views import APIView
 from rest_framework.response import Response
+
+from apps.clients.models import Client
+
 from .models import Citation, CitationDirectory
 from .serializers import CitationSerializer, CitationDirectorySerializer
 
@@ -19,25 +22,27 @@ class CitationViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         return Citation.objects.filter(
-            client_id=self.kwargs["client_pk"]
+            client__slug=self.kwargs["client_slug"]
         ).select_related("directory")
 
     def perform_create(self, serializer):
-        serializer.save(client_id=self.kwargs["client_pk"])
+        client = Client.objects.get(slug=self.kwargs["client_slug"])
+        serializer.save(client=client)
 
 
 class CitationCheckView(APIView):
     """Trigger citation NAP checking for a client."""
 
-    def post(self, request, client_pk):
+    def post(self, request, client_slug):
         from .tasks import check_citations_for_client
-        check_citations_for_client.delay(client_pk)
+        client = Client.objects.get(slug=client_slug)
+        check_citations_for_client.delay(client.id)
         return Response({"message": "Citation check triggered."})
 
 
 class CitationSummaryView(APIView):
-    def get(self, request, client_pk):
-        citations = Citation.objects.filter(client_id=client_pk).select_related("directory")
+    def get(self, request, client_slug):
+        citations = Citation.objects.filter(client__slug=client_slug).select_related("directory")
         total = citations.count()
         found = citations.filter(status__in=["found", "claimed"]).count()
         claimed = citations.filter(status="claimed").count()

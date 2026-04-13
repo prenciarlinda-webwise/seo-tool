@@ -1,5 +1,7 @@
 from rest_framework import generics, viewsets
 
+from apps.clients.models import Client
+
 from .models import GA4ConversionSummary, GA4Event, GA4LandingPage, GA4Property, GA4TrafficSnapshot
 from .serializers import (
     GA4ConversionSummarySerializer,
@@ -25,10 +27,11 @@ class GA4PropertyViewSet(viewsets.ModelViewSet):
     serializer_class = GA4PropertySerializer
 
     def get_queryset(self):
-        return GA4Property.objects.filter(client_id=self.kwargs["client_pk"])
+        return GA4Property.objects.filter(client__slug=self.kwargs["client_slug"])
 
     def perform_create(self, serializer):
-        serializer.save(client_id=self.kwargs["client_pk"])
+        client = Client.objects.get(slug=self.kwargs["client_slug"])
+        serializer.save(client=client)
 
 
 class GA4TrafficListView(DateRangeFilterMixin, generics.ListAPIView):
@@ -36,7 +39,7 @@ class GA4TrafficListView(DateRangeFilterMixin, generics.ListAPIView):
     ordering_fields = ["date", "organic_sessions", "organic_users"]
 
     def get_queryset(self):
-        qs = GA4TrafficSnapshot.objects.filter(client_id=self.kwargs["client_pk"])
+        qs = GA4TrafficSnapshot.objects.filter(client__slug=self.kwargs["client_slug"])
         return self.filter_by_date_range(qs)
 
 
@@ -46,7 +49,7 @@ class GA4LandingPageListView(DateRangeFilterMixin, generics.ListAPIView):
     ordering_fields = ["date", "organic_sessions"]
 
     def get_queryset(self):
-        qs = GA4LandingPage.objects.filter(client_id=self.kwargs["client_pk"])
+        qs = GA4LandingPage.objects.filter(client__slug=self.kwargs["client_slug"])
         return self.filter_by_date_range(qs)
 
 
@@ -56,7 +59,7 @@ class GA4EventListView(DateRangeFilterMixin, generics.ListAPIView):
     ordering_fields = ["date", "event_count", "organic_event_count"]
 
     def get_queryset(self):
-        qs = GA4Event.objects.filter(client_id=self.kwargs["client_pk"])
+        qs = GA4Event.objects.filter(client__slug=self.kwargs["client_slug"])
         return self.filter_by_date_range(qs)
 
 
@@ -65,5 +68,5 @@ class GA4ConversionSummaryListView(DateRangeFilterMixin, generics.ListAPIView):
     ordering_fields = ["date", "total_conversions", "organic_conversions"]
 
     def get_queryset(self):
-        qs = GA4ConversionSummary.objects.filter(client_id=self.kwargs["client_pk"])
+        qs = GA4ConversionSummary.objects.filter(client__slug=self.kwargs["client_slug"])
         return self.filter_by_date_range(qs)

@@ -70,6 +70,10 @@ class Keyword(models.Model):
     previous_organic_rank = models.IntegerField(null=True, blank=True)
     previous_maps_rank = models.IntegerField(null=True, blank=True)
     rank_change = models.IntegerField(null=True, blank=True)
+    current_mobile_rank = models.IntegerField(null=True, blank=True)
+    previous_mobile_rank = models.IntegerField(null=True, blank=True)
+    mobile_rank_change = models.IntegerField(null=True, blank=True)
+    current_mobile_url = models.URLField(max_length=2048, blank=True)
     last_checked_at = models.DateField(null=True, blank=True)
 
     # Discovery metadata

@@ -1,0 +1,412 @@
+{
+  "info": {
+    "name": "SEO Tool API",
+    "description": "Complete API collection for the SEO Tool. Set the {{base_url}} variable to your server (default: http://localhost:8000/api) and {{client_slug}} to the client you're testing (e.g., gimos-roofing).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "base_url", "value": "http://localhost:8000/api" },
+    { "key": "client_slug", "value": "gimos-roofing" },
+    { "key": "plan_id", "value": "1" },
+    { "key": "item_id", "value": "1" },
+    { "key": "keyword_id", "value": "1" },
+    { "key": "audit_id", "value": "1" },
+    { "key": "run_id", "value": "1" },
+    { "key": "competitor_id", "value": "1" },
+    { "key": "citation_id", "value": "1" }
+  ],
+  "item": [
+    {
+      "name": "Clients",
+      "item": [
+        {
+          "name": "List Clients",
+          "request": { "method": "GET", "url": "{{base_url}}/clients/" }
+        },
+        {
+          "name": "Create Client",
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/clients/",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Test Client\",\n  \"domain\": \"testclient.com\",\n  \"website_url\": \"https://www.testclient.com\",\n  \"business_type\": \"Plumbing\",\n  \"city\": \"Jacksonville\",\n  \"state\": \"FL\",\n  \"track_organic\": true,\n  \"track_mobile\": true,\n  \"track_maps\": true,\n  \"discovery_enabled\": true\n}" }
+          }
+        },
+        {
+          "name": "Get Client",
+          "request": { "method": "GET", "url": "{{base_url}}/clients/{{client_slug}}/" }
+        },
+        {
+          "name": "Update Client",
+          "request": {
+            "method": "PATCH",
+            "url": "{{base_url}}/clients/{{client_slug}}/",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"google_business_name\": \"Updated Name\"\n}" }
+          }
+        },
+        {
+          "name": "Delete Client",
+          "request": { "method": "DELETE", "url": "{{base_url}}/clients/{{client_slug}}/" }
+        },
+        {
+          "name": "Client Summary (Dashboard)",
+          "request": { "method": "GET", "url": "{{base_url}}/clients/{{client_slug}}/summary/" }
+        },
+        {
+          "name": "Sync All Data",
+          "request": { "method": "POST", "url": "{{base_url}}/clients/{{client_slug}}/sync/" }
+        },
+        {
+          "name": "Export Clients CSV",
+          "request": { "method": "GET", "url": "{{base_url}}/clients/export/" }
+        }
+      ]
+    },
+    {
+      "name": "Actions (DataForSEO)",
+      "item": [
+        {
+          "name": "Run Ranks (background)",
+          "request": { "method": "POST", "url": "{{base_url}}/clients/{{client_slug}}/run-ranks/" }
+        },
+        {
+          "name": "Run Discovery",
+          "request": { "method": "POST", "url": "{{base_url}}/clients/{{client_slug}}/run-discovery/" }
+        },
+        {
+          "name": "Run Backlinks",
+          "request": { "method": "POST", "url": "{{base_url}}/clients/{{client_slug}}/run-backlinks/" }
+        },
+        {
+          "name": "Run Competitors",
+          "request": { "method": "POST", "url": "{{base_url}}/clients/{{client_slug}}/run-competitors/" }
+        },
+        {
+          "name": "Run Site Audit",
+          "request": { "method": "POST", "url": "{{base_url}}/clients/{{client_slug}}/run-audit/" }
+        },
+        {
+          "name": "Fetch Audit Results",
+          "request": { "method": "POST", "url": "{{base_url}}/clients/{{client_slug}}/fetch-audit-results/" }
+        },
+        {
+          "name": "Run Lighthouse",
+          "request": { "method": "POST", "url": "{{base_url}}/clients/{{client_slug}}/run-lighthouse/" }
+        }
+      ]
+    },
+    {
+      "name": "Keywords",
+      "item": [
+        {
+          "name": "List Keywords",
+          "request": { "method": "GET", "url": "{{base_url}}/clients/{{client_slug}}/keywords/" }
+        },
+        {
+          "name": "List Keywords (filtered)",
+          "request": { "method": "GET", "url": "{{base_url}}/clients/{{client_slug}}/keywords/?status=tracked&ordering=-search_volume" }
+        },
+        {
+          "name": "Create Keyword",
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/clients/{{client_slug}}/keywords/",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"keyword_text\": \"plumber near me\",\n  \"status\": \"tracked\",\n  \"maps_enabled\": true\n}" }
+          }
+        },
+        {
+          "name": "Update Keyword",
+          "request": {
+            "method": "PATCH",
+            "url": "{{base_url}}/clients/{{client_slug}}/keywords/{{keyword_id}}/",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"status\": \"paused\"\n}" }
+          }
+        },
+        {
+          "name": "Delete Keyword",
+          "request": { "method": "DELETE", "url": "{{base_url}}/clients/{{client_slug}}/keywords/{{keyword_id}}/" }
+        },
+        {
+          "name": "Bulk Status Update",
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/clients/{{client_slug}}/keywords/bulk-status/",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"keyword_ids\": [1, 2, 3],\n  \"status\": \"tracked\"\n}" }
+          }
+        },
+        {
+          "name": "Pages (grouped by URL)",
+          "request": { "method": "GET", "url": "{{base_url}}/clients/{{client_slug}}/pages/" }
+        }
+      ]
+    },
+    {
+      "name": "Rankings",
+      "item": [
+        {
+          "name": "Latest Rankings (primary view)",
+          "request": { "method": "GET", "url": "{{base_url}}/clients/{{client_slug}}/rankings/latest/" }
+        },
+        {
+          "name": "Latest Rankings (with comparison)",
+          "request": { "method": "GET", "url": "{{base_url}}/clients/{{client_slug}}/rankings/latest/?compare_date=2026-03-25" }
+        },
+        {
+          "name": "Check Dates",
+          "request": { "method": "GET", "url": "{{base_url}}/clients/{{client_slug}}/rankings/dates/" }
+        },
+        {
+          "name": "Rank Comparison (two dates)",
+          "request": { "method": "GET", "url": "{{base_url}}/clients/{{client_slug}}/rankings/compare/?date_current=2026-04-12&date_previous=2026-03-28" }
+        },
+        {
+          "name": "Rank Changes",
+          "request": { "method": "GET", "url": "{{base_url}}/clients/{{client_slug}}/rankings/changes/" }
+        },
+        {
+          "name": "Organic SERP History",
+          "request": { "method": "GET", "url": "{{base_url}}/clients/{{client_slug}}/rankings/organic/?page_size=365" }
+        },
+        {
+          "name": "Maps Rankings History",
+          "request": { "method": "GET", "url": "{{base_url}}/clients/{{client_slug}}/rankings/maps/?page_size=365" }
+        },
+        {
+          "name": "Local Finder History",
+          "request": { "method": "GET", "url": "{{base_url}}/clients/{{client_slug}}/rankings/local-finder/?page_size=365" }
+        },
+        {
+          "name": "Competitor Rankings",
+          "request": { "method": "GET", "url": "{{base_url}}/clients/{{client_slug}}/rankings/competitors/?date_current=2026-04-12" }
+        }
+      ]
+    },
+    {
+      "name": "Discovery",
+      "item": [
+        {
+          "name": "List Discovery Runs",
+          "request": { "method": "GET", "url": "{{base_url}}/clients/{{client_slug}}/discovery/runs/" }
+        },
+        {
+          "name": "Discovery Results",
+          "request": { "method": "GET", "url": "{{base_url}}/clients/{{client_slug}}/discovery/runs/{{run_id}}/results/?page_size=200" }
+        },
+        {
+          "name": "Promote Keywords",
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/clients/{{client_slug}}/discovery/promote/",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"keyword_texts\": [\"keyword one\", \"keyword two\"]\n}" }
+          }
+        }
+      ]
+    },
+    {
+      "name": "GBP Insights",
+      "item": [
+        {
+          "name": "Performance (daily)",
+          "request": { "method": "GET", "url": "{{base_url}}/clients/{{client_slug}}/gbp/performance/?page_size=365" }
+        },
+        {
+          "name": "Performance (date range)",
+          "request": { "method": "GET", "url": "{{base_url}}/clients/{{client_slug}}/gbp/performance/?date_from=2026-01-01&date_to=2026-03-31&page_size=365" }
+        },
+        {
+          "name": "Calls",
+          "request": { "method": "GET", "url": "{{base_url}}/clients/{{client_slug}}/gbp/calls/?page_size=365" }
+        },
+        {
+          "name": "Reviews",
+          "request": { "method": "GET", "url": "{{base_url}}/clients/{{client_slug}}/gbp/reviews/?page_size=365" }
+        },
+        {
+          "name": "Search Keywords",
+          "request": { "method": "GET", "url": "{{base_url}}/clients/{{client_slug}}/gbp/search-keywords/?page_size=365" }
+        }
+      ]
+    },
+    {
+      "name": "Analytics (GA4)",
+      "item": [
+        {
+          "name": "Traffic",
+          "request": { "method": "GET", "url": "{{base_url}}/clients/{{client_slug}}/analytics/traffic/?page_size=365" }
+        },
+        {
+          "name": "Landing Pages",
+          "request": { "method": "GET", "url": "{{base_url}}/clients/{{client_slug}}/analytics/landing-pages/?page_size=365" }
+        },
+        {
+          "name": "Events",
+          "request": { "method": "GET", "url": "{{base_url}}/clients/{{client_slug}}/analytics/events/?page_size=365" }
+        },
+        {
+          "name": "Conversions",
+          "request": { "method": "GET", "url": "{{base_url}}/clients/{{client_slug}}/analytics/conversions/?page_size=365" }
+        }
+      ]
+    },
+    {
+      "name": "Backlinks",
+      "item": [
+        {
+          "name": "Summary",
+          "request": { "method": "GET", "url": "{{base_url}}/clients/{{client_slug}}/backlinks/summary/" }
+        },
+        {
+          "name": "All Backlinks",
+          "request": { "method": "GET", "url": "{{base_url}}/clients/{{client_slug}}/backlinks/links/" }
+        },
+        {
+          "name": "Referring Domains",
+          "request": { "method": "GET", "url": "{{base_url}}/clients/{{client_slug}}/backlinks/referring-domains/" }
+        },
+        {
+          "name": "Anchors",
+          "request": { "method": "GET", "url": "{{base_url}}/clients/{{client_slug}}/backlinks/anchors/" }
+        },
+        {
+          "name": "Snapshots",
+          "request": { "method": "GET", "url": "{{base_url}}/clients/{{client_slug}}/backlinks/snapshots/" }
+        }
+      ]
+    },
+    {
+      "name": "Competitors",
+      "item": [
+        {
+          "name": "List Competitors",
+          "request": { "method": "GET", "url": "{{base_url}}/clients/{{client_slug}}/competitors/" }
+        },
+        {
+          "name": "Add Competitor",
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/clients/{{client_slug}}/competitors/",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"domain\": \"competitor.com\",\n  \"name\": \"Competitor Name\"\n}" }
+          }
+        },
+        {
+          "name": "Delete Competitor",
+          "request": { "method": "DELETE", "url": "{{base_url}}/clients/{{client_slug}}/competitors/{{competitor_id}}/" }
+        }
+      ]
+    },
+    {
+      "name": "Site Audit",
+      "item": [
+        {
+          "name": "List Audits",
+          "request": { "method": "GET", "url": "{{base_url}}/clients/{{client_slug}}/audits/" }
+        },
+        {
+          "name": "Audit Detail",
+          "request": { "method": "GET", "url": "{{base_url}}/clients/{{client_slug}}/audits/{{audit_id}}/" }
+        },
+        {
+          "name": "Audit Pages",
+          "request": { "method": "GET", "url": "{{base_url}}/clients/{{client_slug}}/audits/{{audit_id}}/pages/?page_size=200" }
+        },
+        {
+          "name": "Lighthouse Results",
+          "request": { "method": "GET", "url": "{{base_url}}/clients/{{client_slug}}/lighthouse/" }
+        }
+      ]
+    },
+    {
+      "name": "Citations",
+      "item": [
+        {
+          "name": "Summary",
+          "request": { "method": "GET", "url": "{{base_url}}/clients/{{client_slug}}/citations/summary/" }
+        },
+        {
+          "name": "List Citations",
+          "request": { "method": "GET", "url": "{{base_url}}/clients/{{client_slug}}/citations/" }
+        },
+        {
+          "name": "Create Citation",
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/clients/{{client_slug}}/citations/",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"directory\": 1,\n  \"listing_url\": \"https://www.yelp.com/biz/example\",\n  \"status\": \"found\"\n}" }
+          }
+        },
+        {
+          "name": "Check Citations (NAP)",
+          "request": { "method": "POST", "url": "{{base_url}}/clients/{{client_slug}}/citations/check/" }
+        },
+        {
+          "name": "List Directories",
+          "request": { "method": "GET", "url": "{{base_url}}/citation-directories/" }
+        }
+      ]
+    },
+    {
+      "name": "Plans",
+      "item": [
+        {
+          "name": "List Plans",
+          "request": { "method": "GET", "url": "{{base_url}}/clients/{{client_slug}}/plans/" }
+        },
+        {
+          "name": "Create Plan",
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/clients/{{client_slug}}/plans/",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Q2 2026 SEO Plan\",\n  \"status\": \"draft\",\n  \"quarter_start\": \"2026-04-01\",\n  \"quarter_end\": \"2026-06-30\"\n}" }
+          }
+        },
+        {
+          "name": "Get Plan Detail",
+          "request": { "method": "GET", "url": "{{base_url}}/clients/{{client_slug}}/plans/{{plan_id}}/" }
+        },
+        {
+          "name": "List Plan Items",
+          "request": { "method": "GET", "url": "{{base_url}}/clients/{{client_slug}}/plans/{{plan_id}}/items/" }
+        },
+        {
+          "name": "Create Plan Item",
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/clients/{{client_slug}}/plans/{{plan_id}}/items/",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"category\": \"on_page\",\n  \"keyword_text\": \"roof repair jacksonville fl\",\n  \"target_url\": \"https://example.com/roof-repair\",\n  \"target_rank\": 5\n}" }
+          }
+        },
+        {
+          "name": "List Deliverables",
+          "request": { "method": "GET", "url": "{{base_url}}/clients/{{client_slug}}/plans/{{plan_id}}/items/{{item_id}}/deliverables/" }
+        }
+      ]
+    },
+    {
+      "name": "Consistency Check",
+      "description": "Run these 3 endpoints and verify the ranking numbers match exactly.",
+      "item": [
+        {
+          "name": "1. Dashboard Summary",
+          "request": { "method": "GET", "url": "{{base_url}}/clients/{{client_slug}}/summary/" }
+        },
+        {
+          "name": "2. Rank Tracker (Latest)",
+          "request": { "method": "GET", "url": "{{base_url}}/clients/{{client_slug}}/rankings/latest/" }
+        },
+        {
+          "name": "3. Pages View",
+          "request": { "method": "GET", "url": "{{base_url}}/clients/{{client_slug}}/pages/" }
+        }
+      ]
+    }
+  ]
+}

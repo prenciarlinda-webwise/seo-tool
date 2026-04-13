@@ -268,13 +268,13 @@ function DeliverableStatusDropdown({
 
 function OnPageDeliverableRow({
   d,
-  clientId,
+  clientSlug,
   planId,
   itemId,
   onMutate,
 }: {
   d: DeliverableData;
-  clientId: number;
+  clientSlug: string;
   planId: number;
   itemId: number;
   onMutate: () => void;
@@ -292,7 +292,7 @@ function OnPageDeliverableRow({
   async function handleSave() {
     setSaving(true);
     try {
-      await updateDeliverable(clientId, planId, itemId, d.id, form);
+      await updateDeliverable(clientSlug, planId, itemId, d.id, form);
       setEditing(false);
       onMutate();
     } finally {
@@ -303,7 +303,7 @@ function OnPageDeliverableRow({
   async function handleStatusChange(status: string) {
     setSaving(true);
     try {
-      await updateDeliverable(clientId, planId, itemId, d.id, { status: status as DeliverableData["status"] });
+      await updateDeliverable(clientSlug, planId, itemId, d.id, { status: status as DeliverableData["status"] });
       onMutate();
     } finally {
       setSaving(false);
@@ -313,7 +313,7 @@ function OnPageDeliverableRow({
   async function handleDelete() {
     setSaving(true);
     try {
-      await deleteDeliverable(clientId, planId, itemId, d.id);
+      await deleteDeliverable(clientSlug, planId, itemId, d.id);
       onMutate();
     } finally {
       setSaving(false);
@@ -375,13 +375,13 @@ function OnPageDeliverableRow({
 
 function GMBDeliverableRow({
   d,
-  clientId,
+  clientSlug,
   planId,
   itemId,
   onMutate,
 }: {
   d: DeliverableData;
-  clientId: number;
+  clientSlug: string;
   planId: number;
   itemId: number;
   onMutate: () => void;
@@ -400,7 +400,7 @@ function GMBDeliverableRow({
   async function handleSave() {
     setSaving(true);
     try {
-      await updateDeliverable(clientId, planId, itemId, d.id, {
+      await updateDeliverable(clientSlug, planId, itemId, d.id, {
         ...form,
         month: form.month === "" ? null : Number(form.month),
       });
@@ -414,7 +414,7 @@ function GMBDeliverableRow({
   async function handleStatusChange(status: string) {
     setSaving(true);
     try {
-      await updateDeliverable(clientId, planId, itemId, d.id, { status: status as DeliverableData["status"] });
+      await updateDeliverable(clientSlug, planId, itemId, d.id, { status: status as DeliverableData["status"] });
       onMutate();
     } finally {
       setSaving(false);
@@ -424,7 +424,7 @@ function GMBDeliverableRow({
   async function handleDelete() {
     setSaving(true);
     try {
-      await deleteDeliverable(clientId, planId, itemId, d.id);
+      await deleteDeliverable(clientSlug, planId, itemId, d.id);
       onMutate();
     } finally {
       setSaving(false);
@@ -490,13 +490,13 @@ function GMBDeliverableRow({
 
 function ContentDeliverableRow({
   d,
-  clientId,
+  clientSlug,
   planId,
   itemId,
   onMutate,
 }: {
   d: DeliverableData;
-  clientId: number;
+  clientSlug: string;
   planId: number;
   itemId: number;
   onMutate: () => void;
@@ -513,7 +513,7 @@ function ContentDeliverableRow({
   async function handleSave() {
     setSaving(true);
     try {
-      await updateDeliverable(clientId, planId, itemId, d.id, form);
+      await updateDeliverable(clientSlug, planId, itemId, d.id, form);
       setEditing(false);
       onMutate();
     } finally {
@@ -524,7 +524,7 @@ function ContentDeliverableRow({
   async function handleStatusChange(status: string) {
     setSaving(true);
     try {
-      await updateDeliverable(clientId, planId, itemId, d.id, { status: status as DeliverableData["status"] });
+      await updateDeliverable(clientSlug, planId, itemId, d.id, { status: status as DeliverableData["status"] });
       onMutate();
     } finally {
       setSaving(false);
@@ -534,7 +534,7 @@ function ContentDeliverableRow({
   async function handleDelete() {
     setSaving(true);
     try {
-      await deleteDeliverable(clientId, planId, itemId, d.id);
+      await deleteDeliverable(clientSlug, planId, itemId, d.id);
       onMutate();
     } finally {
       setSaving(false);
@@ -592,13 +592,13 @@ function ContentDeliverableRow({
 
 function LinkBuildingDeliverableRow({
   d,
-  clientId,
+  clientSlug,
   planId,
   itemId,
   onMutate,
 }: {
   d: DeliverableData;
-  clientId: number;
+  clientSlug: string;
   planId: number;
   itemId: number;
   onMutate: () => void;
@@ -615,7 +615,7 @@ function LinkBuildingDeliverableRow({
   async function handleSave() {
     setSaving(true);
     try {
-      await updateDeliverable(clientId, planId, itemId, d.id, form);
+      await updateDeliverable(clientSlug, planId, itemId, d.id, form);
       setEditing(false);
       onMutate();
     } finally {
@@ -626,7 +626,7 @@ function LinkBuildingDeliverableRow({
   async function handleStatusChange(status: string) {
     setSaving(true);
     try {
-      await updateDeliverable(clientId, planId, itemId, d.id, { status: status as DeliverableData["status"] });
+      await updateDeliverable(clientSlug, planId, itemId, d.id, { status: status as DeliverableData["status"] });
       onMutate();
     } finally {
       setSaving(false);
@@ -636,7 +636,7 @@ function LinkBuildingDeliverableRow({
   async function handleDelete() {
     setSaving(true);
     try {
-      await deleteDeliverable(clientId, planId, itemId, d.id);
+      await deleteDeliverable(clientSlug, planId, itemId, d.id);
       onMutate();
     } finally {
       setSaving(false);
@@ -695,12 +695,12 @@ function LinkBuildingDeliverableRow({
 /* ---------- Add deliverable forms ---------- */
 
 function AddOnPageDeliverableForm({
-  clientId,
+  clientSlug,
   planId,
   itemId,
   onDone,
 }: {
-  clientId: number;
+  clientSlug: string;
   planId: number;
   itemId: number;
   onDone: () => void;
@@ -712,7 +712,7 @@ function AddOnPageDeliverableForm({
     e.preventDefault();
     setSaving(true);
     try {
-      await createDeliverable(clientId, planId, itemId, { ...form, due_date: form.due_date || null });
+      await createDeliverable(clientSlug, planId, itemId, { ...form, due_date: form.due_date || null });
       setForm({ title: "", on_page_action: "", due_date: "", assignee: "" });
       onDone();
     } finally {
@@ -734,12 +734,12 @@ function AddOnPageDeliverableForm({
 }
 
 function AddGMBDeliverableForm({
-  clientId,
+  clientSlug,
   planId,
   itemId,
   onDone,
 }: {
-  clientId: number;
+  clientSlug: string;
   planId: number;
   itemId: number;
   onDone: () => void;
@@ -751,7 +751,7 @@ function AddGMBDeliverableForm({
     e.preventDefault();
     setSaving(true);
     try {
-      await createDeliverable(clientId, planId, itemId, {
+      await createDeliverable(clientSlug, planId, itemId, {
         ...form,
         due_date: form.due_date || null,
         month: form.month ? Number(form.month) : null,
@@ -778,12 +778,12 @@ function AddGMBDeliverableForm({
 }
 
 function AddContentDeliverableForm({
-  clientId,
+  clientSlug,
   planId,
   itemId,
   onDone,
 }: {
-  clientId: number;
+  clientSlug: string;
   planId: number;
   itemId: number;
   onDone: () => void;
@@ -795,7 +795,7 @@ function AddContentDeliverableForm({
     e.preventDefault();
     setSaving(true);
     try {
-      await createDeliverable(clientId, planId, itemId, { ...form, due_date: form.due_date || null });
+      await createDeliverable(clientSlug, planId, itemId, { ...form, due_date: form.due_date || null });
       setForm({ title: "", description: "", due_date: "" });
       onDone();
     } finally {
@@ -816,12 +816,12 @@ function AddContentDeliverableForm({
 }
 
 function AddLinkBuildingDeliverableForm({
-  clientId,
+  clientSlug,
   planId,
   itemId,
   onDone,
 }: {
-  clientId: number;
+  clientSlug: string;
   planId: number;
   itemId: number;
   onDone: () => void;
@@ -833,7 +833,7 @@ function AddLinkBuildingDeliverableForm({
     e.preventDefault();
     setSaving(true);
     try {
-      await createDeliverable(clientId, planId, itemId, { ...form, due_date: form.due_date || null });
+      await createDeliverable(clientSlug, planId, itemId, { ...form, due_date: form.due_date || null });
       setForm({ title: "", description: "", due_date: "" });
       onDone();
     } finally {
@@ -858,12 +858,12 @@ function AddLinkBuildingDeliverableForm({
 function OnPageItemRow({
   item,
   plan,
-  clientId,
+  clientSlug,
   onMutate,
 }: {
   item: PlanItem;
   plan: QuarterlyPlanDetail;
-  clientId: number;
+  clientSlug: string;
   onMutate: () => void;
 }) {
   const [expanded, setExpanded] = useState(false);
@@ -873,7 +873,7 @@ function OnPageItemRow({
   async function handleDeleteItem() {
     setDeleting(true);
     try {
-      await deletePlanItem(clientId, plan.id, item.id);
+      await deletePlanItem(clientSlug, plan.id, item.id);
       onMutate();
     } finally {
       setDeleting(false);
@@ -947,7 +947,7 @@ function OnPageItemRow({
                 </thead>
                 <tbody className="divide-y divide-gray-100">
                   {deliverables.map((d) => (
-                    <OnPageDeliverableRow key={d.id} d={d} clientId={clientId} planId={plan.id} itemId={item.id} onMutate={onMutate} />
+                    <OnPageDeliverableRow key={d.id} d={d} clientSlug={clientSlug} planId={plan.id} itemId={item.id} onMutate={onMutate} />
                   ))}
                 </tbody>
               </table>
@@ -955,7 +955,7 @@ function OnPageItemRow({
 
             {showAddForm ? (
               <AddOnPageDeliverableForm
-                clientId={clientId}
+                clientSlug={clientSlug}
                 planId={plan.id}
                 itemId={item.id}
                 onDone={() => {
@@ -981,12 +981,12 @@ function OnPageItemRow({
 function GMBItemRow({
   item,
   plan,
-  clientId,
+  clientSlug,
   onMutate,
 }: {
   item: PlanItem;
   plan: QuarterlyPlanDetail;
-  clientId: number;
+  clientSlug: string;
   onMutate: () => void;
 }) {
   const [expanded, setExpanded] = useState(false);
@@ -996,7 +996,7 @@ function GMBItemRow({
   async function handleDeleteItem() {
     setDeleting(true);
     try {
-      await deletePlanItem(clientId, plan.id, item.id);
+      await deletePlanItem(clientSlug, plan.id, item.id);
       onMutate();
     } finally {
       setDeleting(false);
@@ -1069,7 +1069,7 @@ function GMBItemRow({
                 </thead>
                 <tbody className="divide-y divide-gray-100">
                   {deliverables.map((d) => (
-                    <GMBDeliverableRow key={d.id} d={d} clientId={clientId} planId={plan.id} itemId={item.id} onMutate={onMutate} />
+                    <GMBDeliverableRow key={d.id} d={d} clientSlug={clientSlug} planId={plan.id} itemId={item.id} onMutate={onMutate} />
                   ))}
                 </tbody>
               </table>
@@ -1077,7 +1077,7 @@ function GMBItemRow({
 
             {showAddForm ? (
               <AddGMBDeliverableForm
-                clientId={clientId}
+                clientSlug={clientSlug}
                 planId={plan.id}
                 itemId={item.id}
                 onDone={() => {
@@ -1102,12 +1102,12 @@ function GMBItemRow({
 
 function CitationItemRow({
   item,
-  clientId,
+  clientSlug,
   planId,
   onMutate,
 }: {
   item: PlanItem;
-  clientId: number;
+  clientSlug: string;
   planId: number;
   onMutate: () => void;
 }) {
@@ -1117,7 +1117,7 @@ function CitationItemRow({
   async function handleStatusChange(newStatus: string) {
     setSaving(true);
     try {
-      await updatePlanItem(clientId, planId, item.id, { citation_status: newStatus });
+      await updatePlanItem(clientSlug, planId, item.id, { citation_status: newStatus });
       onMutate();
     } finally {
       setSaving(false);
@@ -1127,7 +1127,7 @@ function CitationItemRow({
   async function handleToggleComplete() {
     setSaving(true);
     try {
-      await updatePlanItem(clientId, planId, item.id, { is_completed: !item.is_completed });
+      await updatePlanItem(clientSlug, planId, item.id, { is_completed: !item.is_completed });
       onMutate();
     } finally {
       setSaving(false);
@@ -1137,7 +1137,7 @@ function CitationItemRow({
   async function handleDeleteItem() {
     setDeleting(true);
     try {
-      await deletePlanItem(clientId, planId, item.id);
+      await deletePlanItem(clientSlug, planId, item.id);
       onMutate();
     } finally {
       setDeleting(false);
@@ -1178,12 +1178,12 @@ function CitationItemRow({
 function ContentItemRow({
   item,
   plan,
-  clientId,
+  clientSlug,
   onMutate,
 }: {
   item: PlanItem;
   plan: QuarterlyPlanDetail;
-  clientId: number;
+  clientSlug: string;
   onMutate: () => void;
 }) {
   const [expanded, setExpanded] = useState(false);
@@ -1193,7 +1193,7 @@ function ContentItemRow({
   async function handleDeleteItem() {
     setDeleting(true);
     try {
-      await deletePlanItem(clientId, plan.id, item.id);
+      await deletePlanItem(clientSlug, plan.id, item.id);
       onMutate();
     } finally {
       setDeleting(false);
@@ -1244,7 +1244,7 @@ function ContentItemRow({
                 </thead>
                 <tbody className="divide-y divide-gray-100">
                   {deliverables.map((d) => (
-                    <ContentDeliverableRow key={d.id} d={d} clientId={clientId} planId={plan.id} itemId={item.id} onMutate={onMutate} />
+                    <ContentDeliverableRow key={d.id} d={d} clientSlug={clientSlug} planId={plan.id} itemId={item.id} onMutate={onMutate} />
                   ))}
                 </tbody>
               </table>
@@ -1252,7 +1252,7 @@ function ContentItemRow({
 
             {showAddForm ? (
               <AddContentDeliverableForm
-                clientId={clientId}
+                clientSlug={clientSlug}
                 planId={plan.id}
                 itemId={item.id}
                 onDone={() => {
@@ -1278,12 +1278,12 @@ function ContentItemRow({
 function LinkBuildingItemRow({
   item,
   plan,
-  clientId,
+  clientSlug,
   onMutate,
 }: {
   item: PlanItem;
   plan: QuarterlyPlanDetail;
-  clientId: number;
+  clientSlug: string;
   onMutate: () => void;
 }) {
   const [expanded, setExpanded] = useState(false);
@@ -1293,7 +1293,7 @@ function LinkBuildingItemRow({
   async function handleDeleteItem() {
     setDeleting(true);
     try {
-      await deletePlanItem(clientId, plan.id, item.id);
+      await deletePlanItem(clientSlug, plan.id, item.id);
       onMutate();
     } finally {
       setDeleting(false);
@@ -1340,7 +1340,7 @@ function LinkBuildingItemRow({
                 </thead>
                 <tbody className="divide-y divide-gray-100">
                   {deliverables.map((d) => (
-                    <LinkBuildingDeliverableRow key={d.id} d={d} clientId={clientId} planId={plan.id} itemId={item.id} onMutate={onMutate} />
+                    <LinkBuildingDeliverableRow key={d.id} d={d} clientSlug={clientSlug} planId={plan.id} itemId={item.id} onMutate={onMutate} />
                   ))}
                 </tbody>
               </table>
@@ -1348,7 +1348,7 @@ function LinkBuildingItemRow({
 
             {showAddForm ? (
               <AddLinkBuildingDeliverableForm
-                clientId={clientId}
+                clientSlug={clientSlug}
                 planId={plan.id}
                 itemId={item.id}
                 onDone={() => {
@@ -1375,13 +1375,13 @@ function LinkBuildingItemRow({
 
 function AddItemForm({
   category,
-  clientId,
+  clientSlug,
   planId,
   onDone,
   onCancel,
 }: {
   category: CategoryTab;
-  clientId: number;
+  clientSlug: string;
   planId: number;
   onDone: () => void;
   onCancel: () => void;
@@ -1419,7 +1419,7 @@ function AddItemForm({
         data.title = form.link_target_domain;
       }
 
-      await createPlanItem(clientId, planId, data);
+      await createPlanItem(clientSlug, planId, data);
       onDone();
     } finally {
       setSaving(false);
@@ -1476,7 +1476,7 @@ function AddItemForm({
 
 /* ---------- Category table wrappers ---------- */
 
-function OnPageTable({ items, plan, clientId, onMutate }: { items: PlanItem[]; plan: QuarterlyPlanDetail; clientId: number; onMutate: () => void }) {
+function OnPageTable({ items, plan, clientSlug, onMutate }: { items: PlanItem[]; plan: QuarterlyPlanDetail; clientSlug: string; onMutate: () => void }) {
   return (
     <table className="min-w-full">
       <thead>
@@ -1492,14 +1492,14 @@ function OnPageTable({ items, plan, clientId, onMutate }: { items: PlanItem[]; p
       </thead>
       <tbody className="divide-y divide-gray-100">
         {items.map((item) => (
-          <OnPageItemRow key={item.id} item={item} plan={plan} clientId={clientId} onMutate={onMutate} />
+          <OnPageItemRow key={item.id} item={item} plan={plan} clientSlug={clientSlug} onMutate={onMutate} />
         ))}
       </tbody>
     </table>
   );
 }
 
-function GMBTable({ items, plan, clientId, onMutate }: { items: PlanItem[]; plan: QuarterlyPlanDetail; clientId: number; onMutate: () => void }) {
+function GMBTable({ items, plan, clientSlug, onMutate }: { items: PlanItem[]; plan: QuarterlyPlanDetail; clientSlug: string; onMutate: () => void }) {
   return (
     <table className="min-w-full">
       <thead>
@@ -1514,14 +1514,14 @@ function GMBTable({ items, plan, clientId, onMutate }: { items: PlanItem[]; plan
       </thead>
       <tbody className="divide-y divide-gray-100">
         {items.map((item) => (
-          <GMBItemRow key={item.id} item={item} plan={plan} clientId={clientId} onMutate={onMutate} />
+          <GMBItemRow key={item.id} item={item} plan={plan} clientSlug={clientSlug} onMutate={onMutate} />
         ))}
       </tbody>
     </table>
   );
 }
 
-function CitationsTable({ items, clientId, planId, onMutate }: { items: PlanItem[]; clientId: number; planId: number; onMutate: () => void }) {
+function CitationsTable({ items, clientSlug, planId, onMutate }: { items: PlanItem[]; clientSlug: string; planId: number; onMutate: () => void }) {
   return (
     <table className="min-w-full">
       <thead>
@@ -1534,14 +1534,14 @@ function CitationsTable({ items, clientId, planId, onMutate }: { items: PlanItem
       </thead>
       <tbody className="divide-y divide-gray-100">
         {items.map((item) => (
-          <CitationItemRow key={item.id} item={item} clientId={clientId} planId={planId} onMutate={onMutate} />
+          <CitationItemRow key={item.id} item={item} clientSlug={clientSlug} planId={planId} onMutate={onMutate} />
         ))}
       </tbody>
     </table>
   );
 }
 
-function ContentTable({ items, plan, clientId, onMutate }: { items: PlanItem[]; plan: QuarterlyPlanDetail; clientId: number; onMutate: () => void }) {
+function ContentTable({ items, plan, clientSlug, onMutate }: { items: PlanItem[]; plan: QuarterlyPlanDetail; clientSlug: string; onMutate: () => void }) {
   return (
     <table className="min-w-full">
       <thead>
@@ -1556,14 +1556,14 @@ function ContentTable({ items, plan, clientId, onMutate }: { items: PlanItem[]; 
       </thead>
       <tbody className="divide-y divide-gray-100">
         {items.map((item) => (
-          <ContentItemRow key={item.id} item={item} plan={plan} clientId={clientId} onMutate={onMutate} />
+          <ContentItemRow key={item.id} item={item} plan={plan} clientSlug={clientSlug} onMutate={onMutate} />
         ))}
       </tbody>
     </table>
   );
 }
 
-function LinkBuildingTable({ items, plan, clientId, onMutate }: { items: PlanItem[]; plan: QuarterlyPlanDetail; clientId: number; onMutate: () => void }) {
+function LinkBuildingTable({ items, plan, clientSlug, onMutate }: { items: PlanItem[]; plan: QuarterlyPlanDetail; clientSlug: string; onMutate: () => void }) {
   return (
     <table className="min-w-full">
       <thead>
@@ -1577,7 +1577,7 @@ function LinkBuildingTable({ items, plan, clientId, onMutate }: { items: PlanIte
       </thead>
       <tbody className="divide-y divide-gray-100">
         {items.map((item) => (
-          <LinkBuildingItemRow key={item.id} item={item} plan={plan} clientId={clientId} onMutate={onMutate} />
+          <LinkBuildingItemRow key={item.id} item={item} plan={plan} clientSlug={clientSlug} onMutate={onMutate} />
         ))}
       </tbody>
     </table>
@@ -1588,12 +1588,12 @@ function LinkBuildingTable({ items, plan, clientId, onMutate }: { items: PlanIte
 
 function PlanDetail({
   plan,
-  clientId,
+  clientSlug,
   onBack,
   onReload,
 }: {
   plan: QuarterlyPlanDetail;
-  clientId: number;
+  clientSlug: string;
   onBack: () => void;
   onReload: () => void;
 }) {
@@ -1618,7 +1618,7 @@ function PlanDetail({
     }
     setSavingName(true);
     try {
-      await updatePlan(clientId, plan.id, { name: nameValue });
+      await updatePlan(clientSlug, plan.id, { name: nameValue });
       setEditingName(false);
       onReload();
     } finally {
@@ -1629,7 +1629,7 @@ function PlanDetail({
   async function handleStatusChange(newStatus: string) {
     setSavingStatus(true);
     try {
-      await updatePlan(clientId, plan.id, { status: newStatus as QuarterlyPlanDetail["status"] });
+      await updatePlan(clientSlug, plan.id, { status: newStatus as QuarterlyPlanDetail["status"] });
       onReload();
     } finally {
       setSavingStatus(false);
@@ -1639,7 +1639,7 @@ function PlanDetail({
   async function handleDeletePlan() {
     setDeletingPlan(true);
     try {
-      await deletePlan(clientId, plan.id);
+      await deletePlan(clientSlug, plan.id);
       onBack();
     } finally {
       setDeletingPlan(false);
@@ -1778,19 +1778,19 @@ function PlanDetail({
         ) : (
           <div className="overflow-x-auto">
             {activeTab === "on_page" && currentItems.length > 0 && (
-              <OnPageTable items={currentItems} plan={plan} clientId={clientId} onMutate={onReload} />
+              <OnPageTable items={currentItems} plan={plan} clientSlug={clientSlug} onMutate={onReload} />
             )}
             {activeTab === "gmb" && currentItems.length > 0 && (
-              <GMBTable items={currentItems} plan={plan} clientId={clientId} onMutate={onReload} />
+              <GMBTable items={currentItems} plan={plan} clientSlug={clientSlug} onMutate={onReload} />
             )}
             {activeTab === "citations" && currentItems.length > 0 && (
-              <CitationsTable items={currentItems} clientId={clientId} planId={plan.id} onMutate={onReload} />
+              <CitationsTable items={currentItems} clientSlug={clientSlug} planId={plan.id} onMutate={onReload} />
             )}
             {activeTab === "content" && currentItems.length > 0 && (
-              <ContentTable items={currentItems} plan={plan} clientId={clientId} onMutate={onReload} />
+              <ContentTable items={currentItems} plan={plan} clientSlug={clientSlug} onMutate={onReload} />
             )}
             {activeTab === "link_building" && currentItems.length > 0 && (
-              <LinkBuildingTable items={currentItems} plan={plan} clientId={clientId} onMutate={onReload} />
+              <LinkBuildingTable items={currentItems} plan={plan} clientSlug={clientSlug} onMutate={onReload} />
             )}
           </div>
         )}
@@ -1798,7 +1798,7 @@ function PlanDetail({
         {showAddItem && (
           <AddItemForm
             category={activeTab}
-            clientId={clientId}
+            clientSlug={clientSlug}
             planId={plan.id}
             onDone={() => {
               setShowAddItem(false);
@@ -1829,11 +1829,11 @@ function PlanDetail({
 /* ---------- Create plan form ---------- */
 
 function CreatePlanForm({
-  clientId,
+  clientSlug,
   onDone,
   onCancel,
 }: {
-  clientId: number;
+  clientSlug: string;
   onDone: () => void;
   onCancel: () => void;
 }) {
@@ -1848,7 +1848,7 @@ function CreatePlanForm({
     e.preventDefault();
     setSaving(true);
     try {
-      await createPlan(clientId, form);
+      await createPlan(clientSlug, form);
       onDone();
     } finally {
       setSaving(false);
@@ -1912,8 +1912,8 @@ function CreatePlanForm({
 /* ---------- Main page ---------- */
 
 export default function PlansPage() {
-  const { id } = useParams<{ id: string }>();
-  const clientId = Number(id);
+  const { slug } = useParams<{ slug: string }>();
+  const clientSlug = slug;
 
   const [plans, setPlans] = useState<QuarterlyPlanSummary[]>([]);
   const [selectedPlan, setSelectedPlan] = useState<QuarterlyPlanDetail | null>(null);
@@ -1922,10 +1922,10 @@ export default function PlansPage() {
   const [showCreateForm, setShowCreateForm] = useState(false);
 
   const loadPlans = useCallback(() => {
-    fetchPlans(clientId)
+    fetchPlans(clientSlug)
       .then((res) => setPlans(res.results))
       .finally(() => setLoading(false));
-  }, [clientId]);
+  }, [clientSlug]);
 
   useEffect(() => {
     loadPlans();
@@ -1934,11 +1934,11 @@ export default function PlansPage() {
   const loadPlanDetail = useCallback(
     (planId: number) => {
       setDetailLoading(true);
-      fetchPlan(clientId, planId)
+      fetchPlan(clientSlug, planId)
         .then((detail) => setSelectedPlan(detail))
         .finally(() => setDetailLoading(false));
     },
-    [clientId]
+    [clientSlug]
   );
 
   const reloadCurrentPlan = useCallback(() => {
@@ -1969,7 +1969,7 @@ export default function PlansPage() {
     return (
       <PlanDetail
         plan={selectedPlan}
-        clientId={clientId}
+        clientSlug={clientSlug}
         onBack={() => {
           setSelectedPlan(null);
           loadPlans();
@@ -1995,7 +1995,7 @@ export default function PlansPage() {
 
       {showCreateForm && (
         <CreatePlanForm
-          clientId={clientId}
+          clientSlug={clientSlug}
           onDone={() => {
             setShowCreateForm(false);
             loadPlans();

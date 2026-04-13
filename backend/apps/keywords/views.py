@@ -22,14 +22,19 @@ class KeywordViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         return Keyword.objects.filter(
-            client_id=self.kwargs["client_pk"]
+            client__slug=self.kwargs["client_slug"]
         ).prefetch_related("tags")
 
     def perform_create(self, serializer):
-        serializer.save(client_id=self.kwargs["client_pk"])
+        from apps.clients.models import Client
+        client = Client.objects.get(slug=self.kwargs["client_slug"])
+        keyword = serializer.save(client=client)
+        # Auto-fetch volume/KD from DataForSEO if missing
+        if keyword.search_volume is None:
+            _backfill_keyword_metrics(keyword, client)
 
     @action(detail=False, methods=["post"], url_path="bulk-status")
-    def bulk_status(self, request, client_pk=None):
+    def bulk_status(self, request, client_slug=None):
         serializer = BulkStatusSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
@@ -41,7 +46,7 @@ class KeywordViewSet(viewsets.ModelViewSet):
             update_fields["promoted_at"] = timezone.now()
 
         updated = Keyword.objects.filter(
-            client_id=client_pk,
+            client__slug=client_slug,
             id__in=keyword_ids,
         ).update(**update_fields)
 
@@ -52,18 +57,18 @@ class PagesView(APIView):
     """URL-centric view: group tracked keywords by their ranking URL.
     Includes traffic estimates and plan references."""
 
-    def get(self, request, client_pk):
+    def get(self, request, client_slug):
         from apps.plans.models import PlanItem, QuarterlyPlan
 
         keywords = Keyword.objects.filter(
-            client_id=client_pk,
+            client__slug=client_slug,
             status=KeywordStatus.TRACKED,
             current_organic_url__gt="",
         ).order_by("current_organic_url")
 
         # Get active plan items for this client, indexed by keyword_id
         active_plans = QuarterlyPlan.objects.filter(
-            client_id=client_pk,
+            client__slug=client_slug,
             status__in=["active", "draft"],
         )
         plan_items_by_kw = {}
@@ -135,3 +140,33 @@ class PagesView(APIView):
             "total_pages": len(pages),
             "total_traffic": round(all_traffic, 1),
         })
+
+
+def _backfill_keyword_metrics(keyword, client):
+    """Fetch volume/KD from DataForSEO Labs if missing on a keyword."""
+    import logging
+    from django.conf import settings
+    from services.dataforseo import DataForSEOClient, LabsService
+
+    logger = logging.getLogger(__name__)
+    try:
+        api = DataForSEOClient(settings.DATAFORSEO_LOGIN, settings.DATAFORSEO_PASSWORD)
+        labs = LabsService(api)
+        loc = client.location_code if client.location_code < 100000 else 2840
+        result = labs.get_keyword_overview(
+            keywords=[keyword.keyword_text],
+            location_code=loc,
+            language_code=client.language_code,
+        )
+        items = result.get("items", [])
+        if items:
+            item = items[0]
+            ki = item.get("keyword_info", {}) or {}
+            kp = item.get("keyword_properties", {}) or {}
+            keyword.search_volume = ki.get("search_volume")
+            keyword.cpc = ki.get("cpc")
+            keyword.competition = ki.get("competition")
+            keyword.keyword_difficulty = kp.get("keyword_difficulty")
+            keyword.save(update_fields=["search_volume", "cpc", "competition", "keyword_difficulty", "updated_at"])
+    except Exception:
+        logger.warning("Failed to fetch metrics for keyword=%s", keyword.keyword_text)

@@ -30,7 +30,7 @@ function ClientFormPage() {
 
   useEffect(() => {
     if (editId) {
-      fetchClient(Number(editId))
+      fetchClient(editId)
         .then((client) => setFormData(client))
         .catch(() => setError("Failed to load client"))
         .finally(() => setLoading(false));
@@ -64,11 +64,11 @@ function ClientFormPage() {
 
     try {
       if (isEdit) {
-        await updateClient(Number(editId), payload);
+        await updateClient(editId, payload);
         router.push(`/clients/${editId}`);
       } else {
         const client = await createClient(payload);
-        router.push(`/clients/${client.id}`);
+        router.push(`/clients/${client.slug}`);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to save client");

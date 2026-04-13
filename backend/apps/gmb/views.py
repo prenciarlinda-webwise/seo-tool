@@ -25,7 +25,7 @@ class GBPPerformanceListView(DateRangeFilterMixin, generics.ListAPIView):
     ordering_fields = ["date", "total_impressions", "total_interactions"]
 
     def get_queryset(self):
-        qs = GBPPerformanceMetric.objects.filter(client_id=self.kwargs["client_pk"])
+        qs = GBPPerformanceMetric.objects.filter(client__slug=self.kwargs["client_slug"])
         return self.filter_by_date_range(qs)
 
 
@@ -34,7 +34,7 @@ class GBPCallListView(DateRangeFilterMixin, generics.ListAPIView):
     ordering_fields = ["date", "total_calls"]
 
     def get_queryset(self):
-        qs = GBPCallMetric.objects.filter(client_id=self.kwargs["client_pk"])
+        qs = GBPCallMetric.objects.filter(client__slug=self.kwargs["client_slug"])
         return self.filter_by_date_range(qs)
 
 
@@ -43,7 +43,7 @@ class GBPReviewListView(DateRangeFilterMixin, generics.ListAPIView):
     ordering_fields = ["date", "total_reviews", "average_rating"]
 
     def get_queryset(self):
-        qs = GBPReviewSnapshot.objects.filter(client_id=self.kwargs["client_pk"])
+        qs = GBPReviewSnapshot.objects.filter(client__slug=self.kwargs["client_slug"])
         return self.filter_by_date_range(qs)
 
 
@@ -53,5 +53,5 @@ class GBPSearchKeywordListView(DateRangeFilterMixin, generics.ListAPIView):
     ordering_fields = ["impressions", "period_start"]
 
     def get_queryset(self):
-        qs = GBPSearchKeyword.objects.filter(client_id=self.kwargs["client_pk"])
+        qs = GBPSearchKeyword.objects.filter(client__slug=self.kwargs["client_slug"])
         return self.filter_by_date_range(qs, date_field="period_start")

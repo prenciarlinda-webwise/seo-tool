@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import {
   ChevronRight,
   Crosshair,
+  ExternalLink,
   Globe,
   RefreshCw,
   Search,
@@ -12,6 +13,7 @@ import {
   TrendingUp,
 } from "lucide-react";
 import {
+  fetchClient,
   fetchDiscoveryRuns,
   fetchDiscoveryResults,
   promoteKeywords,
@@ -20,7 +22,7 @@ import {
   type DiscoveryResult,
 } from "@/lib/api";
 import { ActionButton } from "@/components/action-button";
-import { cn, formatNumber } from "@/lib/utils";
+import { cn, formatNumber, buildSerpUrl } from "@/lib/utils";
 
 type SourceFilter = "all" | "ranked" | "competitor_gap";
 type FlagFilter = "all" | "new" | "interesting";
@@ -48,8 +50,8 @@ function RankBadge({ rank }: { rank: number | null }) {
 }
 
 export default function DiscoveryPage() {
-  const { id } = useParams<{ id: string }>();
-  const clientId = Number(id);
+  const { slug } = useParams<{ slug: string }>();
+  const clientSlug = slug;
   const [runs, setRuns] = useState<DiscoveryRun[]>([]);
   const [selectedRun, setSelectedRun] = useState<DiscoveryRun | null>(null);
   const [results, setResults] = useState<DiscoveryResult[]>([]);
@@ -59,15 +61,19 @@ export default function DiscoveryPage() {
   const [sourceFilter, setSourceFilter] = useState<SourceFilter>("all");
   const [flagFilter, setFlagFilter] = useState<FlagFilter>("all");
   const [searchQuery, setSearchQuery] = useState("");
+  const [clientLocation, setClientLocation] = useState("");
 
   useEffect(() => {
-    fetchDiscoveryRuns(clientId)
+    fetchClient(clientSlug).then((c) => {
+      setClientLocation([c.city, c.state].filter(Boolean).join(", "));
+    });
+    fetchDiscoveryRuns(clientSlug)
       .then((res) => {
         setRuns(res.results);
         if (res.results.length > 0) setSelectedRun(res.results[0]);
       })
       .finally(() => setLoading(false));
-  }, [clientId]);
+  }, [clientSlug]);
 
   useEffect(() => {
     if (!selectedRun) return;
@@ -78,10 +84,10 @@ export default function DiscoveryPage() {
     if (flagFilter === "interesting") params.push("is_interesting=true");
     const qs = params.length > 0 ? params.join("&") : undefined;
 
-    fetchDiscoveryResults(clientId, selectedRun.id, qs)
+    fetchDiscoveryResults(clientSlug, selectedRun.id, qs)
       .then((res) => setResults(res.results))
       .finally(() => setLoadingResults(false));
-  }, [clientId, selectedRun, sourceFilter, flagFilter]);
+  }, [clientSlug, selectedRun, sourceFilter, flagFilter]);
 
   function toggleSelect(kw: string) {
     setSelected((prev) => {
@@ -102,10 +108,10 @@ export default function DiscoveryPage() {
 
   async function handlePromote() {
     if (selected.size === 0) return;
-    await promoteKeywords(clientId, Array.from(selected));
+    await promoteKeywords(clientSlug, Array.from(selected));
     setSelected(new Set());
     if (selectedRun) {
-      const res = await fetchDiscoveryResults(clientId, selectedRun.id);
+      const res = await fetchDiscoveryResults(clientSlug, selectedRun.id);
       setResults(res.results);
     }
   }
@@ -142,9 +148,9 @@ export default function DiscoveryPage() {
           label="Run Discovery"
           loadingLabel="Discovering..."
           icon={<RefreshCw className="h-3.5 w-3.5" />}
-          onClick={() => runDiscovery(clientId)}
+          onClick={() => runDiscovery(clientSlug)}
           onSuccess={() => {
-            fetchDiscoveryRuns(clientId).then((res) => {
+            fetchDiscoveryRuns(clientSlug).then((res) => {
               setRuns(res.results);
               if (res.results.length > 0) setSelectedRun(res.results[0]);
             });
@@ -354,6 +360,15 @@ export default function DiscoveryPage() {
                             <span className="text-sm font-medium text-gray-900">
                               {r.keyword_text}
                             </span>
+                            <a
+                              href={buildSerpUrl(r.keyword_text, clientLocation)}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-gray-300 hover:text-green-600 transition-colors"
+                              title="View SERP"
+                            >
+                              <ExternalLink className="h-3 w-3" />
+                            </a>
                             {r.is_new && (
                               <span className="px-1.5 py-0.5 bg-blue-100 text-blue-700 text-[10px] font-medium rounded">
                                 New

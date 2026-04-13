@@ -31,3 +31,17 @@ export function rankBadgeColor(rank: number | null): string {
   if (rank <= 20) return "bg-yellow-100 text-yellow-800";
   return "bg-gray-100 text-gray-600";
 }
+
+/**
+ * Build a Google SERP URL for a keyword with location targeting.
+ * Uses &near= for local results.
+ * If a DataForSEO check_url exists, prefer that (it's exact).
+ */
+export function buildSerpUrl(keyword: string, location?: string, dataforseoUrl?: string): string {
+  if (dataforseoUrl) return dataforseoUrl;
+  const q = encodeURIComponent(keyword);
+  if (location) {
+    return `https://www.google.com/search?q=${q}&near=${encodeURIComponent(location)}`;
+  }
+  return `https://www.google.com/search?q=${q}`;
+}

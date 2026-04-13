@@ -1,5 +1,7 @@
 from rest_framework import viewsets
 
+from apps.clients.models import Client
+
 from .models import Deliverable, PlanItem, QuarterlyPlan
 from .serializers import (
     DeliverableSerializer,
@@ -16,7 +18,7 @@ class QuarterlyPlanViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         return QuarterlyPlan.objects.filter(
-            client_id=self.kwargs["client_pk"]
+            client__slug=self.kwargs["client_slug"]
         ).prefetch_related("items__deliverables")
 
     def get_serializer_class(self):
@@ -25,7 +27,8 @@ class QuarterlyPlanViewSet(viewsets.ModelViewSet):
         return QuarterlyPlanSerializer
 
     def perform_create(self, serializer):
-        serializer.save(client_id=self.kwargs["client_pk"])
+        client = Client.objects.get(slug=self.kwargs["client_slug"])
+        serializer.save(client=client)
 
 
 class PlanItemViewSet(viewsets.ModelViewSet):
@@ -36,7 +39,7 @@ class PlanItemViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         return PlanItem.objects.filter(
             plan_id=self.kwargs["plan_pk"],
-            plan__client_id=self.kwargs["client_pk"],
+            plan__client__slug=self.kwargs["client_slug"],
         ).prefetch_related("deliverables")
 
     def perform_create(self, serializer):
@@ -51,7 +54,7 @@ class DeliverableViewSet(viewsets.ModelViewSet):
         return Deliverable.objects.filter(
             plan_item_id=self.kwargs["item_pk"],
             plan_item__plan_id=self.kwargs["plan_pk"],
-            plan_item__plan__client_id=self.kwargs["client_pk"],
+            plan_item__plan__client__slug=self.kwargs["client_slug"],
         )
 
     def perform_create(self, serializer):

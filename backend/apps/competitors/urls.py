@@ -7,5 +7,5 @@ router = DefaultRouter()
 router.register(r"competitors", CompetitorViewSet, basename="competitor")
 
 urlpatterns = [
-    path("clients/<int:client_pk>/", include(router.urls)),
+    path("clients/<slug:client_slug>/", include(router.urls)),
 ]

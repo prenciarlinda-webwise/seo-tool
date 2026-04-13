@@ -20,6 +20,7 @@ class SERPService:
         location_code: int = 2840,
         language_code: str = "en",
         depth: int = 100,
+        device: str = "desktop",
     ) -> dict:
         """Run a live organic SERP check for a single keyword.
 
@@ -31,6 +32,7 @@ class SERPService:
                 "location_code": location_code,
                 "language_code": language_code,
                 "depth": depth,
+                "device": device,
             }
         ]
 
@@ -74,6 +76,7 @@ class SERPService:
 
         serp_data = result_data[0]
         result["total_results_count"] = serp_data.get("se_results_count")
+        result["check_url"] = serp_data.get("check_url", "")
 
         items = serp_data.get("items", [])
         domain_clean = domain.lower().replace("www.", "")
@@ -115,17 +118,38 @@ class SERPService:
                 rank_abs = item.get("rank_absolute", 1)
                 result["serp_page"] = ((rank_abs - 1) // 10) + 1
 
-        # Top 5 competitors (organic results excluding client domain)
-        for item in organic_items[:10]:
+        # All competitors (organic results excluding client domain)
+        seen_domains = set()
+        for item in organic_items:
             item_domain = item.get("domain", "").lower().replace("www.", "")
-            if item_domain != domain_clean:
+            if item_domain != domain_clean and item_domain not in seen_domains:
+                seen_domains.add(item_domain)
                 result["top_competitors"].append({
                     "rank": item.get("rank_absolute"),
                     "domain": item.get("domain", ""),
                     "url": item.get("url", ""),
                     "title": item.get("title", ""),
                 })
-                if len(result["top_competitors"]) >= 5:
-                    break
 
         return result
+
+    @staticmethod
+    def extract_all_positions(task_result: dict) -> dict[str, int]:
+        """Extract rank positions for ALL domains in the SERP results.
+
+        Returns dict mapping domain (lowercase, no www) to rank_absolute.
+        Only includes the first occurrence of each domain.
+        """
+        positions = {}
+        result_data = task_result.get("result", [])
+        if not result_data:
+            return positions
+
+        for item in result_data[0].get("items", []) or []:
+            if item.get("type") != "organic":
+                continue
+            domain = (item.get("domain") or "").lower().replace("www.", "")
+            if domain and domain not in positions:
+                positions[domain] = item.get("rank_absolute")
+
+        return positions
